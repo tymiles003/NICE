@@ -76,7 +76,7 @@ public class CardReader {
 
         // Validate response APDU
         int digits = responseAPDU.length();
-        if (digits < 12) {
+        if (digits < 4) {
             throw new CardException(String.format("Response APDU is too short (%d hexadecimal digits)", digits));
         }
         String data = responseAPDU.substring(0, digits - 4);
