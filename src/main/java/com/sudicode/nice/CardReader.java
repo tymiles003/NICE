@@ -12,19 +12,30 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * Utilities to manipulate an ACR122U device.
+ * Smart card reader.
  */
-public class ACR122U {
+public class CardReader {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ACR122U.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CardReader.class);
+
+    private final String deviceName;
 
     /**
-     * Access the ACR122U device and wait for a card. Once the card is present, read its UID.
+     * Construct a new {@link CardReader}.
+     *
+     * @param deviceName Name of the USB device (e.g. "ACR122")
+     */
+    public CardReader(final String deviceName) {
+        this.deviceName = deviceName;
+    }
+
+    /**
+     * Access the card reader and wait for a card. Once the card is present, read its UID.
      *
      * @return The UID
      * @throws CardException if command fails
      */
-    public static String readUID() throws CardException {
+    public String readUID() throws CardException {
         return send(new byte[]{(byte) 0xFF, (byte) 0xCA, (byte) 0x00, (byte) 0x00, (byte) 0x00});
     }
 
@@ -35,19 +46,20 @@ public class ACR122U {
      * @return Data portion of the response APDU
      * @throws CardException if command fails
      */
-    private static String send(byte[] commandAPDU) throws CardException {
+    private String send(byte[] commandAPDU) throws CardException {
         // Get the list of available terminals
         TerminalFactory tFactory = TerminalFactory.getDefault();
         List<CardTerminal> terminals = tFactory.terminals().list();
+        LOG.info("Available terminals: {}", terminals);
         CardTerminal terminal = terminals.stream()
-                .filter(t -> t.getName().contains("ACR122U"))
+                .filter(t -> t.getName().contains(deviceName))
                 .findFirst()
-                .orElseThrow(() -> new CardException("ACR122U not found"));
+                .orElseThrow(() -> new CardException(deviceName + " not found"));
 
         // Establish a connection with the card
         LOG.info("Waiting for a card.");
         terminal.waitForCardPresent(0);
-        Card card = terminal.connect("T=0");
+        Card card = terminal.connect("T=1");
         CardChannel channel = card.getBasicChannel();
 
         // Initialize buffers
@@ -79,7 +91,7 @@ public class ACR122U {
 
     public static void main(String[] args) {
         try {
-            LOG.info("The UID of your card is {}", ACR122U.readUID());
+            LOG.info("The UID of your card is {}", new CardReader("ACR122").readUID());
         } catch (CardException e) {
             e.printStackTrace();
         }
