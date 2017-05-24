@@ -19,13 +19,13 @@ public class CardReaderTest {
 
     @Test
     public void testFailure() throws Exception {
-        ResponseAPDU failure = new ResponseAPDU(new byte[]{(byte) 0xBE, (byte) 0xEF, (byte) 0x64, (byte) 0x01});
+        ResponseAPDU failure = new ResponseAPDU(new byte[]{(byte) 0xBE, (byte) 0xEF, (byte) 0x64, (byte) 0x00});
         CardReader cr = new CardReader(deviceThatReturns(failure));
         try {
             cr.readUID();
             fail("Expected CardException");
         } catch (CardException expected) {
-            assertEquals("Command failed (SW=0x6401)", expected.getMessage());
+            assertEquals("Command failed (SW=0x6400)", expected.getMessage());
         }
     }
 
