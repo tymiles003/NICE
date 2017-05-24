@@ -25,7 +25,7 @@ public class CardReader {
      * Access the card reader and wait for a card. Once the card is present, read its UID.
      *
      * @return The UID
-     * @throws CardException if the command processing status is not equal to 0x9000
+     * @throws CardException if the operation failed
      */
     public String readUID() throws CardException {
         CommandAPDU command = new CommandAPDU(new byte[]{(byte) 0xFF, (byte) 0xCA, (byte) 0x00, (byte) 0x00, (byte) 0x00});
