@@ -7,8 +7,9 @@ import javax.smartcardio.Card;
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -40,25 +41,15 @@ public class ACR122UDevice implements Device {
     }
 
     @Override
-    public String sendCommand(final byte[] commandAPDU) throws CardException {
+    public ResponseAPDU sendCommand(final CommandAPDU commandAPDU) throws CardException {
         // Establish a connection with the card
         log.info("Waiting for a card");
         terminal.waitForCardPresent(0);
         Card card = terminal.connect("*");
         CardChannel channel = card.getBasicChannel();
 
-        // Initialize buffers
-        byte[] buf = new byte[258];
-        ByteBuffer bufCmd = ByteBuffer.wrap(commandAPDU);
-        ByteBuffer bufResp = ByteBuffer.wrap(buf);
-        StringBuilder responseAPDU = new StringBuilder();
-
         // Send command APDU, retrieve response APDU
-        int output = channel.transmit(bufCmd, bufResp); // output = The length of the received response APDU
-        for (int i = 0; i < output; i++) {
-            responseAPDU.append(String.format("%02X", buf[i])); // The result is formatted as a hexadecimal integer
-        }
-        return responseAPDU.toString();
+        return channel.transmit(commandAPDU);
     }
 
 }
