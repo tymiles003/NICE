@@ -56,6 +56,7 @@ public class Main extends Application {
                     String uid = cr.readUID();
                     Platform.runLater(() -> text.setText("ID: " + uid));
                     cardTerminal.waitForCardAbsent(0);
+                    Platform.runLater(() -> text.setText("Please tap your card..."));
                 } catch (CardException e) {
                     throw new RuntimeException(e);
                 }
