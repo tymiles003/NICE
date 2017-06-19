@@ -1,5 +1,6 @@
 package com.sudicode.nice.hardware;
 
+import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ public class CardTerminalDevice implements Device {
      *
      * @param cardTerminal The {@link CardTerminal} to use
      */
+    @Inject
     public CardTerminalDevice(final CardTerminal cardTerminal) {
         this.cardTerminal = cardTerminal;
 

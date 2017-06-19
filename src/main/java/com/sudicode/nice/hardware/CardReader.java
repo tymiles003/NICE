@@ -1,5 +1,7 @@
 package com.sudicode.nice.hardware;
 
+import com.google.inject.Inject;
+
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
@@ -17,6 +19,7 @@ public class CardReader {
      *
      * @param device The {@link Device} to use.
      */
+    @Inject
     public CardReader(final Device device) {
         this.device = device;
     }
