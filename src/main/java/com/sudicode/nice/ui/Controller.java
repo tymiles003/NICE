@@ -86,7 +86,7 @@ public class Controller implements Initializable {
                     student.save();
                 } catch (SQLException e) {
                     log.error("Caught exception while updating student.", e);
-                    dialogs.showExceptionDialog(e);
+                    Dialogs.showExceptionDialog(e);
                 }
             });
 
@@ -99,7 +99,7 @@ public class Controller implements Initializable {
                     student.save();
                 } catch (SQLException e) {
                     log.error("Caught exception while updating student.", e);
-                    dialogs.showExceptionDialog(e);
+                    Dialogs.showExceptionDialog(e);
                 }
             });
 
@@ -112,7 +112,7 @@ public class Controller implements Initializable {
                     student.save();
                 } catch (SQLException e) {
                     log.error("Caught exception while updating student.", e);
-                    dialogs.showExceptionDialog(e);
+                    Dialogs.showExceptionDialog(e);
                 }
             });
 
@@ -139,13 +139,13 @@ public class Controller implements Initializable {
                         cardTerminal.waitForCardAbsent(0);
                     } catch (CardException | SQLException e) {
                         log.error("Caught exception while listening for cards.", e);
-                        dialogs.showExceptionDialog(e);
+                        Dialogs.showExceptionDialog(e);
                     }
                 }
             });
         } catch (SQLException e) {
             log.error("Caught exception during initialization.", e);
-            dialogs.showExceptionDialog(e);
+            Dialogs.showExceptionDialog(e);
         }
     }
 
@@ -169,7 +169,7 @@ public class Controller implements Initializable {
             studentsTable.getItems().setAll(students.list());
         } catch (SQLException e) {
             log.error("Caught exception while refreshing students table.", e);
-            dialogs.showExceptionDialog(e);
+            Dialogs.showExceptionDialog(e);
         }
         studentsTable.refresh();
     }

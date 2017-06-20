@@ -5,6 +5,7 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 import com.sudicode.nice.hardware.CardTerminalDevice;
 import com.sudicode.nice.hardware.Device;
 import com.sudicode.nice.model.Constants;
+import com.sudicode.nice.ui.Dialogs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,8 @@ public class NiceModule extends AbstractModule {
 
             bind(DataSource.class).toInstance(dataSource);
         } catch (CardException e) {
-            throw new RuntimeException(e);
+            Dialogs.showExceptionDialog(e);
+            System.exit(1);
         }
     }
 

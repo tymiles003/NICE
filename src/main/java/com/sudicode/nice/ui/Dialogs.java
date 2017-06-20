@@ -18,6 +18,7 @@ import javafx.scene.layout.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.smartcardio.CardException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.SQLException;
@@ -125,12 +126,18 @@ public class Dialogs {
     /**
      * Show an exception dialog.
      *
-     * @param e The {@link Exception} to encapsulate
+     * @param e The {@link Exception} to display
      */
-    public void showExceptionDialog(Exception e) {
+    public static void showExceptionDialog(Exception e) {
         Alert alert = new Alert(AlertType.ERROR);
         alert.setTitle("Critical Error");
-        alert.setHeaderText("An error has occurred.");
+        if (e instanceof SQLException) {
+            alert.setHeaderText("A database error has occurred.");
+        } else if (e instanceof CardException) {
+            alert.setHeaderText("A card reader error has occurred.");
+        } else {
+            alert.setHeaderText("An error has occurred.");
+        }
         alert.setContentText("Click \"Show Details\" for the stack trace.");
 
         // Create expandable Exception.
