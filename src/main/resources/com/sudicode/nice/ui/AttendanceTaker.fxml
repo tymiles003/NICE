@@ -37,7 +37,7 @@
       </VBox>
    </top>
    <center>
-      <TableView fx:id="studentsTable" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+      <TableView fx:id="studentsTable" editable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" BorderPane.alignment="CENTER">
         <columns>
           <TableColumn fx:id="idCol" prefWidth="75.0" text="ID" />
             <TableColumn fx:id="lastNameCol" prefWidth="75.0" text="LName" />

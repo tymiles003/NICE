@@ -1,18 +1,17 @@
 package com.sudicode.nice.model;
 
+import com.sudicode.nice.dao.Students;
 import org.apache.commons.dbutils.QueryRunner;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Model class for students.
  */
 public class Student {
 
-    private final DataSource dataSource;
+    private DataSource dataSource;
 
     private String studentId;
     private String firstName;
@@ -21,35 +20,20 @@ public class Student {
     private String email;
 
     /**
-     * Construct a new {@link Student}.
-     *
-     * @param dataSource The {@link DataSource} to access
+     * Default constructor. Avoid calling this directly, as it does not initialize the {@link DataSource}. Use
+     * {@link Students#newInstance()} instead.
+     * <p>
+     * Left public to allow access from {@link org.apache.commons.dbutils.DbUtils DbUtils}.
      */
-    private Student(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public Student() {
     }
 
-    /**
-     * Obtain a list of {@link Student Students}.
-     *
-     * @param dataSource The {@link DataSource} to access
-     * @return A list of all students
-     * @throws SQLException if a database access error occurs
-     */
-    public static List<Student> list(DataSource dataSource) throws SQLException {
-        return new QueryRunner(dataSource).query("SELECT * FROM Students", rs -> {
-            List<Student> studentList = new ArrayList<>();
-            while (rs.next()) {
-                Student s = new Student(dataSource);
-                s.studentId = rs.getString("studentid");
-                s.firstName = rs.getString("firstname");
-                s.middleName = rs.getString("middlename");
-                s.lastName = rs.getString("lastname");
-                s.email = rs.getString("email");
-                studentList.add(s);
-            }
-            return studentList;
-        });
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     public String getStudentId() {
@@ -95,6 +79,24 @@ public class Student {
     // TODO
     public String getStatus() {
         return "absent";
+    }
+
+    /**
+     * Save ("upsert") this student into its dataSource.
+     *
+     * @throws SQLException if a database access error occurs
+     */
+    public void save() throws SQLException {
+        QueryRunner run = new QueryRunner(getDataSource());
+        String sql = "INSERT INTO Students VALUES (?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE firstname = ?, middlename = ?, lastname = ?, email = ?";
+        run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail(),
+                getFirstName(), getMiddleName(), getLastName(), getEmail());
+    }
+
+    @Override
+    public String toString() {
+        return getFirstName() + " " + getLastName();
     }
 
 }

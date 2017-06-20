@@ -2,24 +2,29 @@ package com.sudicode.nice.ui;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.sudicode.nice.dao.Courses;
+import com.sudicode.nice.dao.Students;
 import com.sudicode.nice.di.NiceModule;
 import com.sudicode.nice.hardware.CardReader;
 import com.sudicode.nice.model.Course;
 import com.sudicode.nice.model.Student;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
-import javax.sql.DataSource;
 import java.net.URL;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
@@ -27,9 +32,13 @@ import java.util.ResourceBundle;
  */
 public class Controller implements Initializable {
 
-    private final DataSource dataSource;
+    private static final Logger log = LoggerFactory.getLogger(Controller.class);
+
     private final CardTerminal cardTerminal;
     private final CardReader cardReader;
+    private final Dialogs dialogs;
+    private final Students students;
+    private final Courses courses;
 
     @FXML
     private TableView<Student> studentsTable;
@@ -51,43 +60,92 @@ public class Controller implements Initializable {
      */
     public Controller() {
         Injector injector = Guice.createInjector(new NiceModule());
-        this.dataSource = injector.getInstance(DataSource.class);
-        this.cardTerminal = injector.getInstance(CardTerminal.class);
-        this.cardReader = injector.getInstance(CardReader.class);
+        cardTerminal = injector.getInstance(CardTerminal.class);
+        cardReader = injector.getInstance(CardReader.class);
+        dialogs = injector.getInstance(Dialogs.class);
+        students = injector.getInstance(Students.class);
+        courses = injector.getInstance(Courses.class);
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
             // Initialize choice box.
-            courseSelect.getItems().addAll(Course.list(dataSource));
+            courseSelect.getItems().addAll(courses.list());
 
             // TODO: Add this under a listener for courseSelect
             // Initialize table.
             idCol.setCellValueFactory(new PropertyValueFactory<>("studentId"));
+
+            lastNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
             lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+            lastNameCol.setOnEditCommit(edit -> {
+                Student student = edit.getRowValue();
+                student.setLastName(edit.getNewValue());
+                try {
+                    student.save();
+                } catch (SQLException e) {
+                    log.error("Caught exception while updating student.", e);
+                    dialogs.showExceptionDialog(e);
+                }
+            });
+
+            firstNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
             firstNameCol.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+            firstNameCol.setOnEditCommit(edit -> {
+                Student student = edit.getRowValue();
+                student.setFirstName(edit.getNewValue());
+                try {
+                    student.save();
+                } catch (SQLException e) {
+                    log.error("Caught exception while updating student.", e);
+                    dialogs.showExceptionDialog(e);
+                }
+            });
+
+            middleNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
             middleNameCol.setCellValueFactory(new PropertyValueFactory<>("middleName"));
+            middleNameCol.setOnEditCommit(edit -> {
+                Student student = edit.getRowValue();
+                student.setMiddleName(edit.getNewValue());
+                try {
+                    student.save();
+                } catch (SQLException e) {
+                    log.error("Caught exception while updating student.", e);
+                    dialogs.showExceptionDialog(e);
+                }
+            });
+
             statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
             // Populate table.
-            List<Student> students = Student.list(dataSource);
-            studentsTable.setItems(FXCollections.observableList(students));
+            studentsTable.setItems(FXCollections.observableList(students.list()));
 
             // Listen for cards.
-            submitBackgroundTask(new Task<Void>() {
-                @Override
-                protected Void call() throws Exception {
-                    while (true) {
+            submitBackgroundTask(() -> {
+                while (true) {
+                    try {
                         String uid = cardReader.readUID();
-                        // TODO: Handle reading of UID.
+                        Optional<Student> student = students.getById(uid);
+                        if (student.isPresent()) {
+                            // TODO: Mark attendance
+                            System.out.println("Welcome " + student.get());
+                        } else {
+                            Platform.runLater(() -> {
+                                dialogs.showNewStudentDialog(uid);
+                                refreshStudents();
+                            });
+                        }
                         cardTerminal.waitForCardAbsent(0);
-                        // TODO: Handle absence of card.
+                    } catch (CardException | SQLException e) {
+                        log.error("Caught exception while listening for cards.", e);
+                        dialogs.showExceptionDialog(e);
                     }
                 }
             });
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Caught exception during initialization.", e);
+            dialogs.showExceptionDialog(e);
         }
     }
 
@@ -95,12 +153,25 @@ public class Controller implements Initializable {
      * Run a task in the background. The task will be run in a <strong>daemon</strong> thread. Not recommended for
      * tasks which require resource cleanup.
      *
-     * @param task The {@link Task} to run
+     * @param task A {@link Runnable} containing the task to run
      */
-    private void submitBackgroundTask(Task<?> task) {
+    private void submitBackgroundTask(Runnable task) {
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
+    }
+
+    /**
+     * Refresh the students table.
+     */
+    private void refreshStudents() {
+        try {
+            studentsTable.getItems().setAll(students.list());
+        } catch (SQLException e) {
+            log.error("Caught exception while refreshing students table.", e);
+            dialogs.showExceptionDialog(e);
+        }
+        studentsTable.refresh();
     }
 
 }
