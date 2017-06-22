@@ -28,7 +28,6 @@ public class CardTerminalDevice implements Device {
     @Inject
     public CardTerminalDevice(final CardTerminal cardTerminal) {
         this.cardTerminal = cardTerminal;
-
     }
 
     @Override

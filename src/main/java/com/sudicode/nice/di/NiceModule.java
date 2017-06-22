@@ -2,10 +2,11 @@ package com.sudicode.nice.di;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import com.sudicode.nice.Constants;
 import com.sudicode.nice.hardware.CardTerminalDevice;
 import com.sudicode.nice.hardware.Device;
-import com.sudicode.nice.Constants;
 import com.sudicode.nice.ui.DialogFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ public class NiceModule extends AbstractModule {
     }
 
     @Provides
+    @Singleton
     private CardTerminal getCardTerminal() {
         try {
             TerminalFactory terminalFactory = TerminalFactory.getDefault();
@@ -44,6 +46,7 @@ public class NiceModule extends AbstractModule {
     }
 
     @Provides
+    @Singleton
     private DataSource getDataSource() {
         MysqlDataSource dataSource = new MysqlDataSource();
         dataSource.setDatabaseName(Constants.DB_NAME);

@@ -92,13 +92,14 @@ public class Controller implements Initializable {
                         }
                         cardTerminal.waitForCardAbsent(0);
                     } catch (CardException | SQLException e) {
-                        log.error("Caught exception while listening for cards.", e);
-                        DialogFactory.showExceptionDialog(e);
+                        log.error("Could not listen for cards.", e);
+                        Platform.runLater(() -> DialogFactory.showExceptionDialog(e));
+                        return;
                     }
                 }
             });
         } catch (SQLException e) {
-            log.error("Caught exception during initialization.", e);
+            log.error("Could not initialize.", e);
             DialogFactory.showExceptionDialog(e);
         }
     }
