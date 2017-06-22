@@ -1,16 +1,23 @@
 package com.sudicode.nice.database;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.dbutils.QueryRunner;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
 /**
- * Model class for courses.
+ * Course in the database.
  */
+@EqualsAndHashCode
 public class Course {
 
-    private final DataSource dataSource;
+    private final transient DataSource dataSource;
+
+    /**
+     * Database key, which may differ in state from crn
+     */
+    private transient Integer key;
 
     private int crn;
     private String name;
@@ -32,6 +39,9 @@ public class Course {
 
     public void setCrn(int crn) {
         this.crn = crn;
+        if (key == null) {
+            key = crn;
+        }
     }
 
     public String getName() {
@@ -59,16 +69,44 @@ public class Course {
     }
 
     /**
-     * Save ("upsert") this course into its data source.
+     * Insert this course into its data source.
      *
      * @throws SQLException if a database access error occurs
      */
-    public void save() throws SQLException {
+    public void insert() throws SQLException {
         QueryRunner run = new QueryRunner(dataSource);
-        String sql = "INSERT INTO Courses VALUES (?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE name = ?, number = ?, section = ?";
-        run.update(sql, getCrn(), getName(), getNumber(), getSection(),
-                getName(), getNumber(), getSection());
+        String sql = "INSERT INTO Courses VALUES (?, ?, ?, ?)";
+        if (run.update(sql, getCrn(), getName(), getNumber(), getSection()) != 1) {
+            throw new SQLException("Insert failed.");
+        }
+    }
+
+    /**
+     * Update this course in its data source.
+     *
+     * @throws SQLException if a database access error occurs
+     */
+    public void update() throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        String sql = "UPDATE Courses SET crn = ?, name = ?, number = ?, section = ? "
+                + "WHERE crn = ?";
+        if (run.update(sql, getCrn(), getName(), getNumber(), getSection(), key) != 1) {
+            throw new SQLException("Update failed.");
+        }
+        key = getCrn();
+    }
+
+    /**
+     * Delete this course from its data source.
+     *
+     * @throws SQLException if a database access error occurs
+     */
+    public void delete() throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        String sql = "DELETE FROM Courses WHERE crn = ?";
+        if (run.update(sql, key) != 1) {
+            throw new SQLException("Delete failed.");
+        }
     }
 
     @Override

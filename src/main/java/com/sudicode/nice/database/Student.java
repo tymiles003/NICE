@@ -1,5 +1,6 @@
 package com.sudicode.nice.database;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.dbutils.QueryRunner;
 
 import javax.sql.DataSource;
@@ -8,9 +9,15 @@ import java.sql.SQLException;
 /**
  * Student in the database.
  */
+@EqualsAndHashCode
 public class Student {
 
-    private final DataSource dataSource;
+    private final transient DataSource dataSource;
+
+    /**
+     * Database key, which may differ in state from studentId
+     */
+    private transient Integer key;
 
     private int studentId;
     private String firstName;
@@ -33,6 +40,9 @@ public class Student {
 
     public void setStudentId(int studentId) {
         this.studentId = studentId;
+        if (key == null) {
+            key = studentId;
+        }
     }
 
     public String getFirstName() {
@@ -73,29 +83,61 @@ public class Student {
     }
 
     /**
-     * Save ("upsert") this student into its data source.
+     * Insert this student into its data source.
      *
      * @throws SQLException if a database access error occurs
      */
-    public void save() throws SQLException {
+    public void insert() throws SQLException {
         QueryRunner run = new QueryRunner(dataSource);
-        String sql = "INSERT INTO Students VALUES (?, ?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE firstname = ?, middlename = ?, lastname = ?, email = ?";
-        run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail(),
-                getFirstName(), getMiddleName(), getLastName(), getEmail());
+        String sql = "INSERT INTO Students VALUES (?, ?, ?, ?, ?)";
+        if (run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail()) != 1) {
+            throw new SQLException("Insert failed.");
+        }
+    }
+
+    /**
+     * Update this student in its data source.
+     *
+     * @throws SQLException if a database access error occurs
+     */
+    public void update() throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        String sql = "UPDATE Students SET studentid = ?, firstname = ?, middlename = ?, lastname = ?, email = ? "
+                + "WHERE studentid = ?";
+        if (run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail(), key) != 1) {
+            throw new SQLException("Update failed.");
+        }
+        key = getStudentId();
+    }
+
+    /**
+     * Delete this student from its data source.
+     *
+     * @throws SQLException if a database access error occurs
+     */
+    public void delete() throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        if (run.update("DELETE FROM Students WHERE studentid = ?", key) != 1) {
+            throw new SQLException("Delete failed.");
+        }
+    }
+
+    /**
+     * Enroll this student in a {@link Course}.
+     *
+     * @param course The {@link Course} to enroll in
+     * @throws SQLException if a database access error occurs
+     */
+    public void enroll(Course course) throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        if (run.update("INSERT INTO Registrations (studentid, crn) VALUES (?, ?)", key, course.getCrn()) != 1) {
+            throw new SQLException("Enroll failed.");
+        }
     }
 
     @Override
     public String toString() {
         return getFirstName() + " " + getLastName();
-    }
-
-    /**
-     * Delete this student from its data source.
-     */
-    public void delete() throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        run.update("DELETE FROM Students WHERE studentid = ?", getStudentId());
     }
 
 }

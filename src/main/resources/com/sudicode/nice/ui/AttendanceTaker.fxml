@@ -22,12 +22,15 @@
                 </Menu>
                 <Menu mnemonicParsing="false" text="Student">
                   <items>
+                        <MenuItem mnemonicParsing="false" onAction="#updateStudent" text="Edit" />
                     <MenuItem mnemonicParsing="false" onAction="#deleteStudent" text="Delete" />
                   </items>
                 </Menu>
                   <Menu mnemonicParsing="false" text="Course">
                     <items>
                       <MenuItem mnemonicParsing="false" onAction="#addCourse" text="Create" />
+                        <MenuItem mnemonicParsing="false" onAction="#updateCourse" text="Edit" />
+                        <MenuItem mnemonicParsing="false" onAction="#deleteCourse" text="Delete" />
                     </items>
                   </Menu>
                 <Menu mnemonicParsing="false" text="Help">

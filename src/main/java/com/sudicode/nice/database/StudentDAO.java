@@ -53,6 +53,26 @@ public class StudentDAO {
     }
 
     /**
+     * Obtain a list of students who are enrolled in a course.
+     *
+     * @param crn Course registration number
+     * @return List of students
+     * @throws SQLException if a database access error occurs
+     */
+    public List<Student> list(int crn) throws SQLException {
+        return new QueryRunner(dataSource).query(
+                "SELECT studentid FROM Registrations WHERE crn = ?",
+                rs -> {
+                    List<Student> studentList = new ArrayList<>();
+                    while (rs.next()) {
+                        getById(rs.getInt("studentid")).ifPresent(studentList::add);
+                    }
+                    return studentList;
+                }, crn
+        );
+    }
+
+    /**
      * Obtain a single {@link Student} by ID.
      *
      * @param studentId The student ID
