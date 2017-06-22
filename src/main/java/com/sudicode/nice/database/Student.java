@@ -1,17 +1,16 @@
-package com.sudicode.nice.model;
+package com.sudicode.nice.database;
 
-import com.sudicode.nice.dao.Students;
 import org.apache.commons.dbutils.QueryRunner;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
 /**
- * Model class for students.
+ * Student in the database.
  */
 public class Student {
 
-    private DataSource dataSource;
+    private final DataSource dataSource;
 
     private String studentId;
     private String firstName;
@@ -20,19 +19,11 @@ public class Student {
     private String email;
 
     /**
-     * Default constructor. Avoid calling this directly, as it does not initialize the {@link DataSource}. Use
-     * {@link Students#newInstance()} instead.
-     * <p>
-     * Left public to allow access from {@link org.apache.commons.dbutils.DbUtils DbUtils}.
+     * Constructor.
+     *
+     * @param dataSource The {@link DataSource} that this student originates from
      */
-    public Student() {
-    }
-
-    public DataSource getDataSource() {
-        return dataSource;
-    }
-
-    public void setDataSource(DataSource dataSource) {
+    Student(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -82,12 +73,12 @@ public class Student {
     }
 
     /**
-     * Save ("upsert") this student into its dataSource.
+     * Save ("upsert") this student into its data source.
      *
      * @throws SQLException if a database access error occurs
      */
     public void save() throws SQLException {
-        QueryRunner run = new QueryRunner(getDataSource());
+        QueryRunner run = new QueryRunner(dataSource);
         String sql = "INSERT INTO Students VALUES (?, ?, ?, ?, ?) "
                 + "ON DUPLICATE KEY UPDATE firstname = ?, middlename = ?, lastname = ?, email = ?";
         run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail(),
@@ -97,6 +88,14 @@ public class Student {
     @Override
     public String toString() {
         return getFirstName() + " " + getLastName();
+    }
+
+    /**
+     * Delete this student from its data source.
+     */
+    public void delete() throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        run.update("DELETE FROM Students WHERE studentid = ?", getStudentId());
     }
 
 }

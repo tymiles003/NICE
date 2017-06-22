@@ -1,15 +1,16 @@
-package com.sudicode.nice.model;
+package com.sudicode.nice.database;
 
-import com.sudicode.nice.dao.Courses;
+import org.apache.commons.dbutils.QueryRunner;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 
 /**
  * Model class for courses.
  */
 public class Course {
 
-    private DataSource dataSource;
+    private final DataSource dataSource;
 
     private int crn;
     private String name;
@@ -17,19 +18,11 @@ public class Course {
     private int section;
 
     /**
-     * Default constructor. Avoid calling this directly, as it does not initialize the {@link DataSource}. Use
-     * {@link Courses#newInstance()} instead.
-     * <p>
-     * Left public to allow access from {@link org.apache.commons.dbutils.DbUtils DbUtils}.
+     * Constructor.
+     *
+     * @param dataSource The {@link DataSource} that this course originates from
      */
-    public Course() {
-    }
-
-    public DataSource getDataSource() {
-        return dataSource;
-    }
-
-    public void setDataSource(DataSource dataSource) {
+    Course(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -63,6 +56,19 @@ public class Course {
 
     public void setSection(int section) {
         this.section = section;
+    }
+
+    /**
+     * Save ("upsert") this course into its data source.
+     *
+     * @throws SQLException if a database access error occurs
+     */
+    public void save() throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        String sql = "INSERT INTO Courses VALUES (?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE name = ?, number = ?, section = ?";
+        run.update(sql, getCrn(), getName(), getNumber(), getSection(),
+                getName(), getNumber(), getSection());
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.sudicode.nice.ui;
 
-import com.sudicode.nice.model.Constants;
+import com.sudicode.nice.Constants;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

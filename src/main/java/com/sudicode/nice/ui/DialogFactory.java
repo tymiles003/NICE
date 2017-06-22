@@ -1,8 +1,10 @@
 package com.sudicode.nice.ui;
 
 import com.google.inject.Inject;
-import com.sudicode.nice.dao.Students;
-import com.sudicode.nice.model.Student;
+import com.sudicode.nice.database.Course;
+import com.sudicode.nice.database.CourseDAO;
+import com.sudicode.nice.database.Student;
+import com.sudicode.nice.database.StudentDAO;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -15,8 +17,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
 import java.io.PrintWriter;
@@ -27,39 +27,30 @@ import java.util.Optional;
 /**
  * Generates JavaFX dialog boxes.
  */
-public class Dialogs {
+public class DialogFactory {
 
-    private static final Logger log = LoggerFactory.getLogger(Dialogs.class);
-
-    private final Students students;
+    private final StudentDAO studentDAO;
+    private final CourseDAO courseDAO;
 
     /**
-     * Construct a new {@link Dialogs}.
+     * Construct a new {@link DialogFactory}.
      *
-     * @param students The {@link Students} instance.
+     * @param studentDAO The {@link StudentDAO} instance.
+     * @param courseDAO  The {@link CourseDAO} instance.
      */
     @Inject
-    public Dialogs(Students students) {
-        this.students = students;
+    public DialogFactory(StudentDAO studentDAO, CourseDAO courseDAO) {
+        this.studentDAO = studentDAO;
+        this.courseDAO = courseDAO;
     }
 
     /**
-     * Adds a new student.
+     * Shows a {@link Dialog} which allows the instructor to add a new student.
      *
-     * @param studentId The new student ID
+     * @param studentId The new student's ID
+     * @return The result of {@link Dialog#showAndWait()}
      */
-    public void showNewStudentDialog(String studentId) {
-        // Ask the instructor if they wish to add a new student.
-        Alert confirm = new Alert(AlertType.CONFIRMATION);
-        confirm.setTitle("Student Not Found");
-        confirm.setHeaderText("Student was not found in database.");
-        confirm.setContentText("Register the student?");
-
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (!result.isPresent() || result.get() != ButtonType.OK) {
-            return;
-        }
-
+    public Optional<Student> showNewStudentDialog(String studentId) {
         // Create the custom dialog.
         Dialog<Student> dialog = new Dialog<>();
         dialog.setTitle("New Student");
@@ -101,7 +92,7 @@ public class Dialogs {
         // Convert the result to a student when the register button is clicked.
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == registerButton) {
-                Student s = students.newInstance();
+                Student s = studentDAO.newStudent();
                 s.setStudentId(studentId);
                 s.setFirstName(firstName.getText());
                 s.setMiddleName(middleName.getText());
@@ -112,15 +103,63 @@ public class Dialogs {
             return null;
         });
 
-        // If instructor completes the registration form, add the student.
-        dialog.showAndWait().ifPresent(s -> {
-            try {
-                s.save();
-            } catch (SQLException e) {
-                log.error("Caught exception while registering student.", e);
-                showExceptionDialog(e);
+        return dialog.showAndWait();
+    }
+
+    public Optional<Course> showNewCourseDialog() {
+        // Create the custom dialog.
+        Dialog<Course> dialog = new Dialog<>();
+        dialog.setTitle("New Course");
+        dialog.setHeaderText("Add a new course.");
+
+        // Set the button types.
+        ButtonType addButton = new ButtonType("Add Course", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(addButton, ButtonType.CANCEL);
+
+        // Create the labels and fields.
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField crn = new TextField();
+        crn.setPromptText("CRN");
+        TextField name = new TextField();
+        name.setPromptText("Course Name");
+        TextField number = new TextField();
+        number.setPromptText("Course Number");
+        TextField section = new TextField();
+        section.setPromptText("Course Section");
+
+        grid.add(new Label("CRN:"), 0, 0);
+        grid.add(crn, 1, 0);
+        grid.add(new Label("Course Name:"), 0, 1);
+        grid.add(name, 1, 1);
+        grid.add(new Label("Course Number:"), 0, 2);
+        grid.add(number, 1, 2);
+        grid.add(new Label("Course Section:"), 0, 3);
+        grid.add(section, 1, 3);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Request focus on the first name field by default.
+        Platform.runLater(crn::requestFocus);
+
+        // Convert the result to a student when the register button is clicked.
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == addButton) {
+                Course c = courseDAO.newCourse();
+                c.setCrn(Integer.parseInt(crn.getText()));
+                c.setName(name.getText());
+                c.setNumber(number.getText());
+                c.setSection(Integer.parseInt(section.getText()));
+                return c;
             }
+            return null;
         });
+
+        return dialog.showAndWait();
+
     }
 
     /**

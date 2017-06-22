@@ -2,16 +2,18 @@ package com.sudicode.nice.ui;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.sudicode.nice.dao.Courses;
-import com.sudicode.nice.dao.Students;
+import com.sudicode.nice.database.Course;
+import com.sudicode.nice.database.CourseDAO;
+import com.sudicode.nice.database.Student;
+import com.sudicode.nice.database.StudentDAO;
 import com.sudicode.nice.di.NiceModule;
 import com.sudicode.nice.hardware.CardReader;
-import com.sudicode.nice.model.Course;
-import com.sudicode.nice.model.Student;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -36,9 +38,9 @@ public class Controller implements Initializable {
 
     private final CardTerminal cardTerminal;
     private final CardReader cardReader;
-    private final Dialogs dialogs;
-    private final Students students;
-    private final Courses courses;
+    private final DialogFactory dialogFactory;
+    private final StudentDAO studentDAO;
+    private final CourseDAO courseDAO;
 
     @FXML
     private TableView<Student> studentsTable;
@@ -62,91 +64,167 @@ public class Controller implements Initializable {
         Injector injector = Guice.createInjector(new NiceModule());
         cardTerminal = injector.getInstance(CardTerminal.class);
         cardReader = injector.getInstance(CardReader.class);
-        dialogs = injector.getInstance(Dialogs.class);
-        students = injector.getInstance(Students.class);
-        courses = injector.getInstance(Courses.class);
+        dialogFactory = injector.getInstance(DialogFactory.class);
+        studentDAO = injector.getInstance(StudentDAO.class);
+        courseDAO = injector.getInstance(CourseDAO.class);
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
             // Initialize choice box.
-            courseSelect.getItems().addAll(courses.list());
+            courseSelect.getItems().addAll(courseDAO.list());
 
-            // TODO: Add this under a listener for courseSelect
-            // Initialize table.
-            idCol.setCellValueFactory(new PropertyValueFactory<>("studentId"));
-
-            lastNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
-            lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-            lastNameCol.setOnEditCommit(edit -> {
-                Student student = edit.getRowValue();
-                student.setLastName(edit.getNewValue());
-                try {
-                    student.save();
-                } catch (SQLException e) {
-                    log.error("Caught exception while updating student.", e);
-                    Dialogs.showExceptionDialog(e);
-                }
-            });
-
-            firstNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
-            firstNameCol.setCellValueFactory(new PropertyValueFactory<>("firstName"));
-            firstNameCol.setOnEditCommit(edit -> {
-                Student student = edit.getRowValue();
-                student.setFirstName(edit.getNewValue());
-                try {
-                    student.save();
-                } catch (SQLException e) {
-                    log.error("Caught exception while updating student.", e);
-                    Dialogs.showExceptionDialog(e);
-                }
-            });
-
-            middleNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
-            middleNameCol.setCellValueFactory(new PropertyValueFactory<>("middleName"));
-            middleNameCol.setOnEditCommit(edit -> {
-                Student student = edit.getRowValue();
-                student.setMiddleName(edit.getNewValue());
-                try {
-                    student.save();
-                } catch (SQLException e) {
-                    log.error("Caught exception while updating student.", e);
-                    Dialogs.showExceptionDialog(e);
-                }
-            });
-
-            statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-
-            // Populate table.
-            studentsTable.setItems(FXCollections.observableList(students.list()));
+            // Initialize students table.
+            loadStudents();
 
             // Listen for cards.
             submitBackgroundTask(() -> {
                 while (true) {
                     try {
                         String uid = cardReader.readUID();
-                        Optional<Student> student = students.getById(uid);
+                        Optional<Student> student = studentDAO.getById(uid);
                         if (student.isPresent()) {
                             // TODO: Mark attendance
-                            System.out.println("Welcome " + student.get());
+                            log.info("{} is present.", student.get());
                         } else {
-                            Platform.runLater(() -> {
-                                dialogs.showNewStudentDialog(uid);
-                                refreshStudents();
-                            });
+                            Platform.runLater(() -> addStudent(uid));
                         }
                         cardTerminal.waitForCardAbsent(0);
                     } catch (CardException | SQLException e) {
                         log.error("Caught exception while listening for cards.", e);
-                        Dialogs.showExceptionDialog(e);
+                        DialogFactory.showExceptionDialog(e);
                     }
                 }
             });
         } catch (SQLException e) {
             log.error("Caught exception during initialization.", e);
-            Dialogs.showExceptionDialog(e);
+            DialogFactory.showExceptionDialog(e);
         }
+    }
+
+    /**
+     * Ask the instructor if they wish to add a new student. If they accept, provide the dialog which allows them to
+     * do so.
+     *
+     * @param studentId The new student's ID
+     */
+    private void addStudent(String studentId) {
+        // Ask the instructor if they wish to add a new student.
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Student Not Found");
+        confirm.setHeaderText("Student was not found in database.");
+        confirm.setContentText("Register the student?");
+
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.orElse(null) == ButtonType.OK) {
+            dialogFactory.showNewStudentDialog(studentId).ifPresent(s -> {
+                try {
+                    s.save();
+                    refreshStudents();
+                } catch (SQLException e) {
+                    log.error("Could not register student.", e);
+                    DialogFactory.showExceptionDialog(e);
+                }
+            });
+        }
+    }
+
+    /**
+     * Delete the selected student.
+     */
+    public void deleteStudent() {
+        // TODO: Confirmation dialog
+
+        try {
+            Student s = studentsTable.getSelectionModel().getSelectedItem();
+            if (s != null) {
+                s.delete();
+                refreshStudents();
+            }
+        } catch (SQLException e) {
+            log.error("Could not delete student.", e);
+            DialogFactory.showExceptionDialog(e);
+        }
+    }
+
+    /**
+     * Loads students into the students table.
+     *
+     * @throws SQLException if a database access error occurs
+     */
+    private void loadStudents() throws SQLException {
+        // Initialize table.
+        idCol.setCellValueFactory(new PropertyValueFactory<>("studentId"));
+
+        lastNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+        lastNameCol.setOnEditCommit(edit -> {
+            Student student = edit.getRowValue();
+            student.setLastName(edit.getNewValue());
+            try {
+                student.save();
+            } catch (SQLException e) {
+                log.error("Caught exception while updating student.", e);
+                DialogFactory.showExceptionDialog(e);
+            }
+        });
+
+        firstNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        firstNameCol.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+        firstNameCol.setOnEditCommit(edit -> {
+            Student student = edit.getRowValue();
+            student.setFirstName(edit.getNewValue());
+            try {
+                student.save();
+            } catch (SQLException e) {
+                log.error("Caught exception while updating student.", e);
+                DialogFactory.showExceptionDialog(e);
+            }
+        });
+
+        middleNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        middleNameCol.setCellValueFactory(new PropertyValueFactory<>("middleName"));
+        middleNameCol.setOnEditCommit(edit -> {
+            Student student = edit.getRowValue();
+            student.setMiddleName(edit.getNewValue());
+            try {
+                student.save();
+            } catch (SQLException e) {
+                log.error("Caught exception while updating student.", e);
+                DialogFactory.showExceptionDialog(e);
+            }
+        });
+
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        // Populate table.
+        studentsTable.setItems(FXCollections.observableList(studentDAO.list()));
+    }
+
+    /**
+     * Refresh the students table.
+     */
+    private void refreshStudents() {
+        try {
+            studentsTable.getItems().setAll(studentDAO.list());
+            studentsTable.refresh();
+        } catch (SQLException e) {
+            log.error("Could not refresh students table.", e);
+            DialogFactory.showExceptionDialog(e);
+        }
+    }
+
+    public void addCourse() {
+        dialogFactory.showNewCourseDialog().ifPresent(c -> {
+            try {
+                c.save();
+                courseSelect.getItems().add(c);
+            } catch (SQLException e) {
+                log.error("Could not add course.", e);
+                DialogFactory.showExceptionDialog(e);
+            }
+        });
     }
 
     /**
@@ -159,19 +237,6 @@ public class Controller implements Initializable {
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
-    }
-
-    /**
-     * Refresh the students table.
-     */
-    private void refreshStudents() {
-        try {
-            studentsTable.getItems().setAll(students.list());
-        } catch (SQLException e) {
-            log.error("Caught exception while refreshing students table.", e);
-            Dialogs.showExceptionDialog(e);
-        }
-        studentsTable.refresh();
     }
 
 }

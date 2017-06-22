@@ -20,11 +20,16 @@
                     <MenuItem mnemonicParsing="false" text="Close" />
                   </items>
                 </Menu>
-                <Menu mnemonicParsing="false" text="Edit">
+                <Menu mnemonicParsing="false" text="Student">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Delete" />
+                    <MenuItem mnemonicParsing="false" onAction="#deleteStudent" text="Delete" />
                   </items>
                 </Menu>
+                  <Menu mnemonicParsing="false" text="Course">
+                    <items>
+                      <MenuItem mnemonicParsing="false" onAction="#addCourse" text="Create" />
+                    </items>
+                  </Menu>
                 <Menu mnemonicParsing="false" text="Help">
                   <items>
                     <MenuItem mnemonicParsing="false" text="About" />

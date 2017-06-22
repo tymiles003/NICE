@@ -1,4 +1,4 @@
-package com.sudicode.nice.model;
+package com.sudicode.nice;
 
 /**
  * Constant values and strings.
