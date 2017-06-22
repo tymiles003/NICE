@@ -6,7 +6,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 /**
- * Model class for courses.
+ * Course in the database.
  */
 public class Course {
 
