@@ -82,7 +82,7 @@ public class Controller implements Initializable {
             submitBackgroundTask(() -> {
                 while (true) {
                     try {
-                        String uid = cardReader.readUID();
+                        int uid = cardReader.readUID();
                         Optional<Student> student = studentDAO.getById(uid);
                         if (student.isPresent()) {
                             // TODO: Mark attendance
@@ -110,7 +110,7 @@ public class Controller implements Initializable {
      *
      * @param studentId The new student's ID
      */
-    private void addStudent(String studentId) {
+    private void addStudent(int studentId) {
         // Ask the instructor if they wish to add a new student.
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Student Not Found");

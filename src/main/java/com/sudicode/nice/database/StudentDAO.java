@@ -59,7 +59,7 @@ public class StudentDAO {
      * @return An {@link Optional} which contains the student (if one exists with the given ID)
      * @throws SQLException if a database access error occurs
      */
-    public Optional<Student> getById(String studentId) throws SQLException {
+    public Optional<Student> getById(int studentId) throws SQLException {
         return Optional.ofNullable(
                 new QueryRunner(dataSource).query(
                         "SELECT * FROM Students WHERE studentId = ?",
@@ -78,7 +78,7 @@ public class StudentDAO {
      */
     private Student buildStudent(ResultSet rs) throws SQLException {
         Student s = newStudent();
-        s.setStudentId(rs.getString("studentid"));
+        s.setStudentId(rs.getInt("studentid"));
         s.setFirstName(rs.getString("firstname"));
         s.setMiddleName(rs.getString("middlename"));
         s.setLastName(rs.getString("lastname"));

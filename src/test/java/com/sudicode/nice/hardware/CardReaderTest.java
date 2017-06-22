@@ -31,9 +31,13 @@ public class CardReaderTest {
 
     @Test
     public void testReadUID() throws Exception {
-        ResponseAPDU response = new ResponseAPDU(new byte[]{(byte) 0xBE, (byte) 0xEF, (byte) 0x90, (byte) 0x00});
-        CardReader cr = new CardReader(deviceThatReturns(response));
-        assertEquals("BEEF", cr.readUID());
+        ResponseAPDU resp2Bytes = new ResponseAPDU(new byte[]{(byte) 0xBE, (byte) 0xEF, (byte) 0x90, (byte) 0x00});
+        CardReader cr2Bytes = new CardReader(deviceThatReturns(resp2Bytes));
+        assertEquals(0xBEEF, cr2Bytes.readUID());
+
+        ResponseAPDU resp4Bytes = new ResponseAPDU(new byte[]{(byte) 0xBA, (byte) 0xAD, (byte) 0xF0, (byte) 0x0D, (byte) 0x90, (byte) 0x00});
+        CardReader cr4Bytes = new CardReader(deviceThatReturns(resp4Bytes));
+        assertEquals(0xBAADF00D, cr4Bytes.readUID());
     }
 
     /**

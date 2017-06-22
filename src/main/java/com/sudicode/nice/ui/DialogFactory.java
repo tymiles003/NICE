@@ -50,7 +50,7 @@ public class DialogFactory {
      * @param studentId The new student's ID
      * @return The result of {@link Dialog#showAndWait()}
      */
-    public Optional<Student> showNewStudentDialog(String studentId) {
+    public Optional<Student> showNewStudentDialog(int studentId) {
         // Create the custom dialog.
         Dialog<Student> dialog = new Dialog<>();
         dialog.setTitle("New Student");
