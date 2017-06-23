@@ -88,7 +88,7 @@ public class Student {
     }
 
     /**
-     * Get the status (present, late, absent) of this {@link Student} with regards to a certain {@link Course}.
+     * Get status (present, late, absent) in a certain {@link Course}.
      *
      * @param course The {@link Course}
      * @return "present", "late", or "absent"
