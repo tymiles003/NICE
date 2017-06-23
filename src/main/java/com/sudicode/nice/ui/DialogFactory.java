@@ -18,6 +18,8 @@ import javafx.scene.layout.Priority;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.validator.routines.IntegerValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
 import java.sql.SQLException;
@@ -28,12 +30,41 @@ import java.util.Optional;
  */
 public class DialogFactory {
 
+    private static final Logger log = LoggerFactory.getLogger(DialogFactory.class);
     private static final IntegerValidator intValidator = IntegerValidator.getInstance();
 
     /**
      * Illegal.
      */
     private DialogFactory() {
+    }
+
+    /**
+     * Build add student dialog box.
+     *
+     * @return Dialog which asks the instructor if they wish to add a new student.
+     */
+    public static Alert getAddStudentDialog() {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Student Not Found");
+        confirm.setHeaderText("Student was not found in database.");
+        confirm.setContentText("Register the student?");
+        return confirm;
+    }
+
+    /**
+     * Build enroll student dialog box.
+     *
+     * @param student The {@link Student}
+     * @param course  The {@link Course}
+     * @return Dialog which asks the instructor if they wish to enroll a student in a course.
+     */
+    public static Alert getEnrollStudentDialog(Student student, Course course) {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Student Not Enrolled");
+        confirm.setHeaderText(String.format("%s is not enrolled in %s.", student, course));
+        confirm.setContentText("Enroll the student?");
+        return confirm;
     }
 
     /**
@@ -127,14 +158,14 @@ public class DialogFactory {
         TextField sectField = new TextField(course.getSection() != 0 ? String.valueOf(course.getSection()) : "");
         sectField.setPromptText("Course Section");
 
-        grid.add(new Label("CRN:"), 0, 0);
-        grid.add(crnField, 1, 0);
-        grid.add(new Label("Course Name:"), 0, 1);
-        grid.add(nameField, 1, 1);
-        grid.add(new Label("Course Number:"), 0, 2);
-        grid.add(numField, 1, 2);
-        grid.add(new Label("Course Section:"), 0, 3);
-        grid.add(sectField, 1, 3);
+        grid.add(new Label("Course Name:"), 0, 0);
+        grid.add(nameField, 1, 0);
+        grid.add(new Label("Course Number:"), 0, 1);
+        grid.add(numField, 1, 1);
+        grid.add(new Label("Course Section:"), 0, 2);
+        grid.add(sectField, 1, 2);
+        grid.add(new Label("CRN:"), 0, 3);
+        grid.add(crnField, 1, 3);
 
         // Do some validation.
         Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
@@ -149,7 +180,7 @@ public class DialogFactory {
         dialog.getDialogPane().setContent(grid);
 
         // Request focus on the crn field by default.
-        Platform.runLater(crnField::requestFocus);
+        Platform.runLater(nameField::requestFocus);
 
         // Convert the result to a student when the register button is clicked.
         dialog.setResultConverter(dialogButton -> {
@@ -167,11 +198,15 @@ public class DialogFactory {
     }
 
     /**
-     * Show an exception dialog.
+     * Show a throwable dialog.
      *
-     * @param e The {@link Exception} to display
+     * @param e The {@link Throwable} to display
      */
-    public static void showExceptionDialog(Exception e) {
+    public static void showThrowableDialog(Throwable e) {
+        // Log the throwable.
+        log.error(e.getMessage(), e);
+
+        // Construct the dialog.
         Alert alert = new Alert(AlertType.ERROR);
         alert.setTitle("Critical Error");
         if (e instanceof SQLException) {
@@ -195,7 +230,7 @@ public class DialogFactory {
         expContent.setMaxWidth(Double.MAX_VALUE);
         expContent.add(textArea, 0, 0);
 
-        // Set expandable Exception into the dialog pane.
+        // Set expandable Throwable into the dialog pane.
         alert.getDialogPane().setExpandableContent(expContent);
 
         alert.showAndWait();

@@ -5,6 +5,8 @@ import org.apache.commons.dbutils.QueryRunner;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 /**
  * Student in the database.
@@ -40,9 +42,17 @@ public class Student {
 
     public void setStudentId(int studentId) {
         this.studentId = studentId;
-        if (key == null) {
-            key = studentId;
+        if (getKey() == null) {
+            setKey(studentId);
         }
+    }
+
+    public Integer getKey() {
+        return key;
+    }
+
+    public void setKey(Integer key) {
+        this.key = key;
     }
 
     public String getFirstName() {
@@ -77,9 +87,34 @@ public class Student {
         this.email = email;
     }
 
-    // TODO
-    public String getStatus() {
-        return "absent";
+    /**
+     * Get the status (present, late, absent) of this {@link Student} with regards to a certain {@link Course}.
+     *
+     * @param course The {@link Course}
+     * @return "present", "late", or "absent"
+     * @throws SQLException if a database access error occurs
+     */
+    public String getStatus(Course course) throws SQLException {
+        // Query the database.
+        QueryRunner run = new QueryRunner(dataSource);
+        String sql = "SELECT datetime "
+                + "FROM Attendances "
+                + "WHERE studentid = ? AND crn = ?";
+        Timestamp ts = run.query(sql, rs -> {
+            if (!rs.next()) {
+                return null;
+            }
+            return rs.getTimestamp("datetime");
+        }, getKey(), course.getKey());
+
+        // Return status.
+        if (ts == null) {
+            return ("absent");
+        } else {
+            LocalDateTime ldt = ts.toLocalDateTime();
+            // TODO: Logic here ...
+            return "present";
+        }
     }
 
     /**
@@ -93,6 +128,7 @@ public class Student {
         if (run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail()) != 1) {
             throw new SQLException("Insert failed.");
         }
+        setKey(getStudentId());
     }
 
     /**
@@ -104,10 +140,10 @@ public class Student {
         QueryRunner run = new QueryRunner(dataSource);
         String sql = "UPDATE Students SET studentid = ?, firstname = ?, middlename = ?, lastname = ?, email = ? "
                 + "WHERE studentid = ?";
-        if (run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail(), key) != 1) {
+        if (run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail(), getKey()) != 1) {
             throw new SQLException("Update failed.");
         }
-        key = getStudentId();
+        setKey(getStudentId());
     }
 
     /**
@@ -117,7 +153,7 @@ public class Student {
      */
     public void delete() throws SQLException {
         QueryRunner run = new QueryRunner(dataSource);
-        if (run.update("DELETE FROM Students WHERE studentid = ?", key) != 1) {
+        if (run.update("DELETE FROM Students WHERE studentid = ?", getKey()) != 1) {
             throw new SQLException("Delete failed.");
         }
     }
@@ -130,8 +166,21 @@ public class Student {
      */
     public void enroll(Course course) throws SQLException {
         QueryRunner run = new QueryRunner(dataSource);
-        if (run.update("INSERT INTO Registrations (studentid, crn) VALUES (?, ?)", key, course.getCrn()) != 1) {
+        if (run.update("INSERT INTO Registrations (studentid, crn) VALUES (?, ?)", getKey(), course.getKey()) != 1) {
             throw new SQLException("Enroll failed.");
+        }
+    }
+
+    /**
+     * Mark this student as present in a {@link Course}.
+     *
+     * @param course The {@link Course} to attend
+     * @throws SQLException if a database access error occurs
+     */
+    public void attend(Course course) throws SQLException {
+        QueryRunner run = new QueryRunner(dataSource);
+        if (run.update("INSERT INTO Attendances (studentid, crn) VALUES (?, ?)", getKey(), course.getKey()) != 1) {
+            throw new SQLException("Attend failed.");
         }
     }
 

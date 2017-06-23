@@ -60,15 +60,20 @@ public class StudentDAO {
      * @throws SQLException if a database access error occurs
      */
     public List<Student> list(int crn) throws SQLException {
+        String sql = "SELECT s.studentid, s.firstname, s.middlename, s.lastname, s.email "
+                + "FROM Students s "
+                + "NATURAL JOIN Registrations r "
+                + "WHERE r.crn = ? ";
         return new QueryRunner(dataSource).query(
-                "SELECT studentid FROM Registrations WHERE crn = ?",
+                sql,
                 rs -> {
                     List<Student> studentList = new ArrayList<>();
                     while (rs.next()) {
-                        getById(rs.getInt("studentid")).ifPresent(studentList::add);
+                        studentList.add(buildStudent(rs));
                     }
                     return studentList;
-                }, crn
+                },
+                crn
         );
     }
 

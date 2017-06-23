@@ -39,9 +39,17 @@ public class Course {
 
     public void setCrn(int crn) {
         this.crn = crn;
-        if (key == null) {
-            key = crn;
+        if (getKey() == null) {
+            setKey(crn);
         }
+    }
+
+    public Integer getKey() {
+        return key;
+    }
+
+    public void setKey(Integer key) {
+        this.key = key;
     }
 
     public String getName() {
@@ -79,6 +87,7 @@ public class Course {
         if (run.update(sql, getCrn(), getName(), getNumber(), getSection()) != 1) {
             throw new SQLException("Insert failed.");
         }
+        setKey(getCrn());
     }
 
     /**
@@ -90,10 +99,10 @@ public class Course {
         QueryRunner run = new QueryRunner(dataSource);
         String sql = "UPDATE Courses SET crn = ?, name = ?, number = ?, section = ? "
                 + "WHERE crn = ?";
-        if (run.update(sql, getCrn(), getName(), getNumber(), getSection(), key) != 1) {
+        if (run.update(sql, getCrn(), getName(), getNumber(), getSection(), getKey()) != 1) {
             throw new SQLException("Update failed.");
         }
-        key = getCrn();
+        setKey(getCrn());
     }
 
     /**
@@ -104,7 +113,7 @@ public class Course {
     public void delete() throws SQLException {
         QueryRunner run = new QueryRunner(dataSource);
         String sql = "DELETE FROM Courses WHERE crn = ?";
-        if (run.update(sql, key) != 1) {
+        if (run.update(sql, getKey()) != 1) {
             throw new SQLException("Delete failed.");
         }
     }

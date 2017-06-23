@@ -1,7 +1,10 @@
 package com.sudicode.nice.ui;
 
+import com.diffplug.common.base.DurianPlugins;
+import com.diffplug.common.base.Errors;
 import com.sudicode.nice.Constants;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -18,6 +21,9 @@ public class Main extends Application {
         Assert.assertNotNull("Please set DB_USER in your environment variables", Constants.DB_USER);
         Assert.assertNotNull("Please set DB_PW in your environment variables", Constants.DB_PW);
         Assert.assertNotNull("Please set DB_SERVER in your environment variables", Constants.DB_SERVER);
+
+        // Set default exception handling routine
+        DurianPlugins.register(Errors.Plugins.Dialog.class, e -> Platform.runLater(() -> DialogFactory.showThrowableDialog(e)));
 
         // Run the application
         launch(args);

@@ -40,7 +40,7 @@ public class NiceModule extends AbstractModule {
             log.info("Commands will be sent to {}", cardTerminal.getName());
             return cardTerminal;
         } catch (CardException e) {
-            DialogFactory.showExceptionDialog(e);
+            DialogFactory.showThrowableDialog(e);
             throw new RuntimeException(e);
         }
     }
