@@ -100,7 +100,7 @@ public class Student {
         String sql = "SELECT datetime "
                 + "FROM Attendances "
                 + "WHERE studentid = ? AND crn = ?";
-        Timestamp ts = run.query(sql, rs -> {
+        Timestamp timestamp = run.query(sql, rs -> {
             if (!rs.next()) {
                 return null;
             }
@@ -108,11 +108,11 @@ public class Student {
         }, getKey(), course.getKey());
 
         // Return status.
-        if (ts == null) {
-            return ("absent");
+        if (timestamp == null) {
+            return "absent";
         } else {
-            LocalDateTime ldt = ts.toLocalDateTime();
-            // TODO: Logic here ...
+            LocalDateTime dateTime = timestamp.toLocalDateTime();
+            // TODO: Need some additional logic here.
             return "present";
         }
     }

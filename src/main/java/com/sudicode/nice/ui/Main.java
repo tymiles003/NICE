@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.junit.Assert;
 
@@ -33,8 +34,10 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("AttendanceTaker.fxml"));
         Scene scene = new Scene(root, Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT);
+        scene.getStylesheets().add(getClass().getResource("bootstrap3.css").toExternalForm());
         primaryStage.setTitle("NICE Attendance Taker");
         primaryStage.setScene(scene);
+        primaryStage.getIcons().add(new Image(Constants.ICON_URL));
         primaryStage.show();
     }
 

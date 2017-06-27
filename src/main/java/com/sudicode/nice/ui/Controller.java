@@ -4,7 +4,7 @@ import com.diffplug.common.base.Errors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.sudicode.nice.Constants;
-import com.sudicode.nice.UncheckedSQLException;
+import com.sudicode.nice.Util;
 import com.sudicode.nice.database.Course;
 import com.sudicode.nice.database.CourseDAO;
 import com.sudicode.nice.database.Student;
@@ -26,6 +26,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import lombok.Lombok;
 
 import javax.smartcardio.CardTerminal;
 import java.net.URL;
@@ -64,6 +65,7 @@ public class Controller implements Initializable {
     private TableColumn<Student, String> statusCol;
     @FXML
     private ComboBox<Course> courseSelect;
+
     private Text placeholder;
 
     /**
@@ -92,27 +94,27 @@ public class Controller implements Initializable {
             courseSelect.getSelectionModel().selectedItemProperty().addListener((x, y, z) -> loadStudents());
 
             // Listen for cards.
-            submitBackgroundTask(Errors.dialog().wrap(() -> {
-                while (true) {
+            Util.submitBackgroundTask(Errors.dialog().wrap(() -> {
+                while (!Thread.interrupted()) {
                     // Wait until a valid course is selected.
-                    await().atMost(FOREVER).until(Controller.this::getSelectedCourse, is(notNullValue()));
+                    await().atMost(FOREVER).until(this::getSelectedCourse, is(notNullValue()));
 
                     // Get UID.
                     int uid = cardReader.readUID();
-                    Optional<Student> maybeStudent = studentDAO.getById(uid);
+                    Optional<Student> oStudent = studentDAO.getById(uid);
 
                     // Get selected course.
-                    Course course = Controller.this.getSelectedCourse();
+                    Course course = getSelectedCourse();
                     if (course == null) continue;
 
                     // Either mark student's attendance, enroll the student, or register the student.
-                    if (maybeStudent.isPresent() && studentsTable.getItems().contains(maybeStudent.get())) {
-                        maybeStudent.get().attend(course);
+                    if (oStudent.isPresent() && studentsTable.getItems().contains(oStudent.get())) {
+                        oStudent.get().attend(course);
                         Platform.runLater(() -> studentsTable.refresh());
-                    } else if (maybeStudent.isPresent()) {
-                        Platform.runLater(() -> Controller.this.enrollStudent(maybeStudent.get(), course));
+                    } else if (oStudent.isPresent()) {
+                        Platform.runLater(() -> enrollStudent(oStudent.get(), course));
                     } else {
-                        Platform.runLater(() -> Controller.this.addStudent(uid, course));
+                        Platform.runLater(() -> addStudent(uid, course));
                     }
                     cardTerminal.waitForCardAbsent(0);
                 }
@@ -120,6 +122,16 @@ public class Controller implements Initializable {
         } catch (SQLException e) {
             DialogFactory.showThrowableDialog(e);
         }
+    }
+
+    /**
+     * Ask the instructor if they wish to add a new student. If they accept, provide the dialog which allows them to
+     * do so.
+     *
+     * @param studentId The new student's ID
+     */
+    private void addStudent(int studentId) {
+        addStudent(studentId, null);
     }
 
     /**
@@ -136,8 +148,10 @@ public class Controller implements Initializable {
             newStudent.setStudentId(studentId);
             DialogFactory.showStudentDialog(newStudent).ifPresent(Errors.dialog().wrap(s -> {
                 s.insert();
-                s.enroll(course);
-                studentsTable.getItems().add(s);
+                if (course != null) {
+                    s.enroll(course);
+                    studentsTable.getItems().add(s);
+                }
             }));
         }
     }
@@ -178,7 +192,7 @@ public class Controller implements Initializable {
                 try {
                     student.update();
                 } catch (SQLException e) {
-                    throw new UncheckedSQLException(e);
+                    throw Lombok.sneakyThrow(e);
                 }
             });
 
@@ -190,7 +204,7 @@ public class Controller implements Initializable {
                 try {
                     student.update();
                 } catch (SQLException e) {
-                    throw new UncheckedSQLException(e);
+                    throw Lombok.sneakyThrow(e);
                 }
             });
 
@@ -202,7 +216,7 @@ public class Controller implements Initializable {
                 try {
                     student.update();
                 } catch (SQLException e) {
-                    throw new UncheckedSQLException(e);
+                    throw Lombok.sneakyThrow(e);
                 }
             });
 
@@ -210,7 +224,7 @@ public class Controller implements Initializable {
                 try {
                     return new SimpleStringProperty(param.getValue().getStatus(selected));
                 } catch (SQLException e) {
-                    throw new UncheckedSQLException(e);
+                    throw Lombok.sneakyThrow(e);
                 }
             });
 
@@ -223,37 +237,50 @@ public class Controller implements Initializable {
                 int crn = getSelectedCourse().getKey();
                 studentsTable.setItems(FXCollections.observableList(studentDAO.list(crn)));
             }
-        } catch (SQLException | UncheckedSQLException e) {
+        } catch (SQLException e) {
             DialogFactory.showThrowableDialog(e);
         }
     }
 
     /**
-     * Update the selected student.
+     * Update a student.
      */
     public void updateStudent() {
-        int index = getSelectedStudentIndex();
-        Student selected = getSelectedStudent();
-        if (selected == null) return;
-        DialogFactory.showStudentDialog(selected).ifPresent(Errors.dialog().wrap(s -> {
-            s.update();
-            studentsTable.getItems().set(index, s);
+        courseSelect.getSelectionModel().clearSelection();
+        DialogFactory.showAsyncWaitForCardDialog(cardReader, Errors.dialog().wrap(uid -> {
+            Optional<Student> oStudent = studentDAO.getById(uid);
+            if (oStudent.isPresent()) {
+                Optional<Student> result = DialogFactory.showStudentDialog(oStudent.get());
+                if (result.isPresent()) {
+                    Student student = result.get();
+                    student.update();
+                    DialogFactory.showObjectUpdatedDialog(student);
+                }
+            } else {
+                addStudent(uid);
+            }
         }));
     }
 
     /**
-     * Delete the selected student.
+     * Delete a student.
      */
     public void deleteStudent() {
-        int index = getSelectedStudentIndex();
-        Student selected = getSelectedStudent();
-        if (selected == null) return;
-        try {
-            selected.delete();
-            studentsTable.getItems().remove(index);
-        } catch (SQLException e) {
-            DialogFactory.showThrowableDialog(e);
-        }
+        courseSelect.getSelectionModel().clearSelection();
+        DialogFactory.showAsyncWaitForCardDialog(cardReader, Errors.dialog().wrap(uid -> {
+            Optional<Student> oStudent = studentDAO.getById(uid);
+            if (oStudent.isPresent()) {
+                DialogFactory.getDeleteStudentDialog(oStudent.get()).showAndWait().ifPresent(Errors.dialog().wrap(buttonType -> {
+                    Student student = oStudent.get();
+                    if (buttonType == ButtonType.OK) {
+                        student.delete();
+                    }
+                    DialogFactory.showObjectDeletedDialog(student);
+                }));
+            } else {
+                addStudent(uid);
+            }
+        }));
     }
 
     /**
@@ -273,11 +300,15 @@ public class Controller implements Initializable {
     public void updateCourse() {
         int index = getSelectedCourseIndex();
         Course selected = getSelectedCourse();
-        if (selected == null) return;
-        DialogFactory.showCourseDialog(selected).ifPresent(Errors.dialog().wrap(c -> {
-            c.update();
-            courseSelect.getItems().set(index, c);
-        }));
+        if (selected == null) {
+            DialogFactory.showNoCourseSelectedDialog();
+        } else {
+            DialogFactory.showCourseDialog(selected).ifPresent(Errors.dialog().wrap(c -> {
+                c.update();
+                courseSelect.getItems().set(index, c);
+                DialogFactory.showObjectUpdatedDialog(c);
+            }));
+        }
     }
 
     /**
@@ -286,26 +317,18 @@ public class Controller implements Initializable {
     public void deleteCourse() {
         int index = getSelectedCourseIndex();
         Course selected = getSelectedCourse();
-        if (selected == null) return;
-        try {
-            selected.delete();
-            courseSelect.getItems().remove(index);
-            loadStudents();
-        } catch (SQLException e) {
-            DialogFactory.showThrowableDialog(e);
+        if (selected == null) {
+            DialogFactory.showNoCourseSelectedDialog();
+        } else {
+            DialogFactory.getDeleteCourseDialog(selected).showAndWait().ifPresent(Errors.dialog().wrap(buttonType -> {
+                if (buttonType == ButtonType.OK) {
+                    selected.delete();
+                    courseSelect.getItems().remove(index);
+                    loadStudents();
+                    DialogFactory.showObjectDeletedDialog(selected);
+                }
+            }));
         }
-    }
-
-    /**
-     * Run a task in the background. The task will be run in a <strong>daemon</strong> thread. Not recommended for
-     * tasks which require resource cleanup.
-     *
-     * @param task A {@link Runnable} containing the task to run
-     */
-    private void submitBackgroundTask(Runnable task) {
-        Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
     }
 
     /**
@@ -334,6 +357,28 @@ public class Controller implements Initializable {
      */
     private int getSelectedCourseIndex() {
         return courseSelect.getSelectionModel().getSelectedIndex();
+    }
+
+    /**
+     * Terminate the application.
+     */
+    public void quit() {
+        Platform.exit();
+    }
+
+    // TODO: Implement.
+    public void exportAttendanceReport() {
+        DialogFactory.showThrowableDialog(new UnsupportedOperationException("Not yet implemented!"));
+    }
+
+    // TODO: Implement.
+    public void registerStudent() {
+        DialogFactory.showThrowableDialog(new UnsupportedOperationException("Not yet implemented!"));
+    }
+
+    // TODO: Implement.
+    public void dropStudent() {
+        DialogFactory.showThrowableDialog(new UnsupportedOperationException("Not yet implemented!"));
     }
 
 }

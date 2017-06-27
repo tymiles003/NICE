@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane fx:id="window" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sudicode.nice.ui.Controller">
+<BorderPane fx:id="window" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sudicode.nice.ui.Controller">
    <top>
       <VBox BorderPane.alignment="CENTER">
          <children>
@@ -17,11 +17,13 @@
               <menus>
                 <Menu mnemonicParsing="false" text="File">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Close" />
+                    <MenuItem mnemonicParsing="false" onAction="#exportAttendanceReport" text="Export" />
+                        <MenuItem mnemonicParsing="false" onAction="#quit" text="Quit" />
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Student">
                   <items>
+                        <MenuItem mnemonicParsing="false" onAction="#registerStudent" text="Register" />
                         <MenuItem mnemonicParsing="false" onAction="#updateStudent" text="Edit" />
                     <MenuItem mnemonicParsing="false" onAction="#deleteStudent" text="Delete" />
                   </items>
@@ -31,16 +33,12 @@
                       <MenuItem mnemonicParsing="false" onAction="#addCourse" text="Create" />
                         <MenuItem mnemonicParsing="false" onAction="#updateCourse" text="Edit" />
                         <MenuItem mnemonicParsing="false" onAction="#deleteCourse" text="Delete" />
+                        <MenuItem mnemonicParsing="false" onAction="#dropStudent" text="Drop" />
                     </items>
                   </Menu>
-                <Menu mnemonicParsing="false" text="Help">
-                  <items>
-                    <MenuItem mnemonicParsing="false" text="About" />
-                  </items>
-                </Menu>
               </menus>
             </MenuBar>
-            <ComboBox fx:id="courseSelect" maxWidth="1.7976931348623157E308" promptText="Select course..." />
+            <ComboBox fx:id="courseSelect" maxWidth="1.7976931348623157E308" promptText="Select course" />
          </children>
       </VBox>
    </top>
@@ -53,6 +51,9 @@
             <TableColumn fx:id="middleNameCol" prefWidth="75.0" text="MName" />
             <TableColumn fx:id="statusCol" prefWidth="75.0" text="Status" />
         </columns>
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+         </columnResizePolicy>
       </TableView>
    </center>
 </BorderPane>

@@ -12,5 +12,6 @@ public class Constants {
     public static final String DB_PW = System.getenv("DB_PW");
     public static final String DB_SERVER = System.getenv("DB_SERVER");
     public static final int PLACEHOLDER_SIZE = 24;
+    public static final String ICON_URL = Constants.class.getResource("wit.png").toExternalForm();
 
 }

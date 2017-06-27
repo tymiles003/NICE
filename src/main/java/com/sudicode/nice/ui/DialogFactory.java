@@ -1,7 +1,11 @@
 package com.sudicode.nice.ui;
 
+import com.diffplug.common.base.Errors;
+import com.sudicode.nice.Constants;
+import com.sudicode.nice.Util;
 import com.sudicode.nice.database.Course;
 import com.sudicode.nice.database.Student;
+import com.sudicode.nice.hardware.CardReader;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
@@ -13,8 +17,10 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
+import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.validator.routines.IntegerValidator;
@@ -24,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import javax.smartcardio.CardException;
 import java.sql.SQLException;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Generates JavaFX dialog boxes.
@@ -45,11 +52,11 @@ public class DialogFactory {
      * @return Dialog which asks the instructor if they wish to add a new student.
      */
     public static Alert getAddStudentDialog() {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Student Not Found");
-        confirm.setHeaderText("Student was not found in database.");
-        confirm.setContentText("Register the student?");
-        return confirm;
+        Alert alert = newAlert(AlertType.CONFIRMATION);
+        alert.setTitle("Student Not Found");
+        alert.setHeaderText("Student was not found in database.");
+        alert.setContentText("Register the student?");
+        return alert;
     }
 
     /**
@@ -60,11 +67,101 @@ public class DialogFactory {
      * @return Dialog which asks the instructor if they wish to enroll a student in a course.
      */
     public static Alert getEnrollStudentDialog(Student student, Course course) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Student Not Enrolled");
-        confirm.setHeaderText(String.format("%s is not enrolled in %s.", student, course));
-        confirm.setContentText("Enroll the student?");
-        return confirm;
+        Alert alert = newAlert(AlertType.CONFIRMATION);
+        alert.setTitle("Student Not Enrolled");
+        alert.setHeaderText(String.format("%s is not enrolled in %s.", student, course));
+        alert.setContentText("Enroll the student?");
+        return alert;
+    }
+
+    /**
+     * Build delete course dialog box.
+     *
+     * @param course The {@link Course}
+     * @return Dialog which asks the instructor if they wish to delete a course.
+     */
+    public static Alert getDeleteCourseDialog(Course course) {
+        Alert alert = newAlert(AlertType.CONFIRMATION);
+        alert.setTitle("Confirm Delete");
+        alert.setHeaderText(String.format("Really delete %s?", course));
+        alert.setContentText("All enrolled students will be dropped!");
+        return alert;
+    }
+
+    /**
+     * Show a {@link Dialog} informing the instructor to select a {@link Course}.
+     */
+    public static void showNoCourseSelectedDialog() {
+        Alert alert = newAlert(AlertType.INFORMATION);
+        alert.setTitle("No Course Selected");
+        alert.setHeaderText("Select a course.");
+        alert.setContentText("You must select a course to perform this action.");
+        alert.showAndWait();
+    }
+
+    /**
+     * Build delete student dialog box.
+     *
+     * @param student The {@link Student}
+     * @return Dialog which asks the instructor if they wish to delete a student.
+     */
+    public static Alert getDeleteStudentDialog(Student student) {
+        Alert alert = newAlert(AlertType.CONFIRMATION);
+        alert.setTitle("Confirm Delete");
+        alert.setHeaderText(String.format("Really delete %s?", student));
+        alert.setContentText("This action is irreversible!");
+        return alert;
+    }
+
+    /**
+     * Shows dialog which confirms that an object has been updated.
+     *
+     * @param o The {@link Object}
+     */
+    public static void showObjectUpdatedDialog(Object o) {
+        Alert alert = newAlert(AlertType.INFORMATION);
+        alert.setTitle("Update Successful");
+        alert.setHeaderText("Update Successful");
+        alert.setContentText(String.format("Succesfully updated %s.", o));
+        alert.show();
+    }
+
+    /**
+     * Show dialog which confirms that an object has been deleted.
+     *
+     * @param o The {@link Object}
+     */
+    public static void showObjectDeletedDialog(Object o) {
+        Alert alert = newAlert(AlertType.INFORMATION);
+        alert.setTitle("Delete Successful");
+        alert.setHeaderText("Delete Successful");
+        alert.setContentText(String.format("Succesfully deleted %s.", o));
+        alert.show();
+    }
+
+    /**
+     * Show a dialog which requests the instructor to tap a student's card. If the dialog is closed before a card is
+     * tapped, do nothing. When a card is tapped, close the dialog and then call the callback with the card's UID
+     * as input.
+     *
+     * @param cardReader The {@link CardReader} to use
+     * @param callback   A {@link Consumer} which is given the UID of the card
+     */
+    public static void showAsyncWaitForCardDialog(CardReader cardReader, Consumer<Integer> callback) {
+        Dialog<Student> dialog = newDialog();
+        dialog.setTitle("Tap Card");
+        dialog.setHeaderText("Please tap the student's card.");
+        dialog.setContentText("Waiting for card...");
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+        dialog.setResultConverter(buttonType -> null);
+        dialog.show();
+        Util.submitBackgroundTask(Errors.dialog().wrap(() -> {
+            int uid = cardReader.readUID();
+            if (dialog.isShowing()) {
+                Platform.runLater(dialog::close);
+                Platform.runLater(() -> callback.accept(uid));
+            }
+        }));
     }
 
     /**
@@ -75,7 +172,7 @@ public class DialogFactory {
      */
     public static Optional<Student> showStudentDialog(Student student) {
         // Create the custom dialog.
-        Dialog<Student> dialog = new Dialog<>();
+        Dialog<Student> dialog = newDialog();
         dialog.setTitle("Student Information");
         dialog.setHeaderText("Please provide student's information.");
 
@@ -135,7 +232,7 @@ public class DialogFactory {
      */
     public static Optional<Course> showCourseDialog(Course course) {
         // Create the custom dialog.
-        Dialog<Course> dialog = new Dialog<>();
+        Dialog<Course> dialog = newDialog();
         dialog.setTitle("Course Information");
         dialog.setHeaderText("Please provide course information.");
 
@@ -207,7 +304,7 @@ public class DialogFactory {
         log.error(e.getMessage(), e);
 
         // Construct the dialog.
-        Alert alert = new Alert(AlertType.ERROR);
+        Alert alert = newAlert(AlertType.ERROR);
         alert.setTitle("Critical Error");
         if (e instanceof SQLException) {
             alert.setHeaderText("A database error has occurred.");
@@ -234,6 +331,30 @@ public class DialogFactory {
         alert.getDialogPane().setExpandableContent(expContent);
 
         alert.showAndWait();
+    }
+
+    /**
+     * Create a new alert with the correct icon.
+     *
+     * @param alertType The {@link AlertType}
+     * @return The alert
+     */
+    private static Alert newAlert(AlertType alertType) {
+        Alert alert = new Alert(alertType);
+        ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().add(new Image(Constants.ICON_URL));
+        return alert;
+    }
+
+    /**
+     * Create a new dialog.
+     *
+     * @param <T> The return type of the dialog.
+     * @return The dialog
+     */
+    private static <T> Dialog<T> newDialog() {
+        Dialog<T> dialog = new Dialog<>();
+        ((Stage) dialog.getDialogPane().getScene().getWindow()).getIcons().add(new Image(Constants.ICON_URL));
+        return dialog;
     }
 
 }
