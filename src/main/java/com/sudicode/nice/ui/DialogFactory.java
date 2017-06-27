@@ -334,7 +334,7 @@ public class DialogFactory {
     }
 
     /**
-     * Create a new alert with the correct icon.
+     * Create a new alert.
      *
      * @param alertType The {@link AlertType}
      * @return The alert

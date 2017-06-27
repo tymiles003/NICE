@@ -34,7 +34,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("AttendanceTaker.fxml"));
         Scene scene = new Scene(root, Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT);
-        scene.getStylesheets().add(getClass().getResource("bootstrap3.css").toExternalForm());
+        scene.getStylesheets().add(Constants.STYLESHEET_URL);
         primaryStage.setTitle("NICE Attendance Taker");
         primaryStage.setScene(scene);
         primaryStage.getIcons().add(new Image(Constants.ICON_URL));
