@@ -20,7 +20,6 @@ public class Main extends Application {
     public static void main(String[] args) {
         // Ensure that environment variables are set
         Assert.assertNotNull("Please set DB_USER in your environment variables", Constants.DB_USER);
-        Assert.assertNotNull("Please set DB_PW in your environment variables", Constants.DB_PW);
         Assert.assertNotNull("Please set DB_SERVER in your environment variables", Constants.DB_SERVER);
 
         // Set default exception handling routine

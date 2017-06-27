@@ -11,7 +11,6 @@ import com.sudicode.nice.ui.DialogFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.TerminalFactory;
 import javax.sql.DataSource;
@@ -39,7 +38,7 @@ public class NiceModule extends AbstractModule {
             CardTerminal cardTerminal = terminals.get(0);
             log.info("Commands will be sent to {}", cardTerminal.getName());
             return cardTerminal;
-        } catch (CardException e) {
+        } catch (Exception e) {
             DialogFactory.showThrowableDialog(e);
             throw new RuntimeException(e);
         }

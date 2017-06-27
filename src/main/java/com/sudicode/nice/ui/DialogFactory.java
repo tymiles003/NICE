@@ -342,6 +342,7 @@ public class DialogFactory {
     private static Alert newAlert(AlertType alertType) {
         Alert alert = new Alert(alertType);
         ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().add(new Image(Constants.ICON_URL));
+        alert.getDialogPane().getStylesheets().add(Constants.STYLESHEET_URL);
         return alert;
     }
 
@@ -354,6 +355,7 @@ public class DialogFactory {
     private static <T> Dialog<T> newDialog() {
         Dialog<T> dialog = new Dialog<>();
         ((Stage) dialog.getDialogPane().getScene().getWindow()).getIcons().add(new Image(Constants.ICON_URL));
+        dialog.getDialogPane().getStylesheets().add(Constants.STYLESHEET_URL);
         return dialog;
     }
 
