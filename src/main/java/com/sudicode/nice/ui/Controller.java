@@ -1,16 +1,12 @@
 package com.sudicode.nice.ui;
 
 import com.diffplug.common.base.Errors;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.sudicode.nice.Constants;
 import com.sudicode.nice.Util;
 import com.sudicode.nice.database.Course;
-import com.sudicode.nice.database.CourseDAO;
 import com.sudicode.nice.database.Student;
-import com.sudicode.nice.database.StudentDAO;
-import com.sudicode.nice.di.NiceModule;
 import com.sudicode.nice.hardware.CardReader;
+import com.sudicode.nice.hardware.CardTerminalDevice;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -26,28 +22,31 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
-import lombok.Lombok;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
+import javax.smartcardio.TerminalFactory;
 import java.net.URL;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Duration.FOREVER;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 /**
  * FXML controller class.
  */
 public class Controller implements Initializable {
 
-    private final CardTerminal cardTerminal;
-    private final CardReader cardReader;
-    private final StudentDAO studentDAO;
-    private final CourseDAO courseDAO;
+    private static final Logger log = LoggerFactory.getLogger(Controller.class);
+
+    private CardTerminal cardTerminal;
+    private CardReader cardReader;
 
     @FXML
     private BorderPane window;
@@ -72,56 +71,56 @@ public class Controller implements Initializable {
      * Initalize dependencies here, since the {@link Controller} cannot be instantiated by Guice.
      */
     public Controller() {
-        Injector injector = Guice.createInjector(new NiceModule());
-        cardTerminal = injector.getInstance(CardTerminal.class);
-        cardReader = injector.getInstance(CardReader.class);
-        studentDAO = injector.getInstance(StudentDAO.class);
-        courseDAO = injector.getInstance(CourseDAO.class);
+        try {
+            cardTerminal = getCardTerminal();
+            cardReader = new CardReader(new CardTerminalDevice(cardTerminal));
+        } catch (CardException | RuntimeException e) {
+            DialogFactory.showThrowableDialog(e);
+        }
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        try {
-            // Initialize choice box.
-            courseSelect.setItems(FXCollections.observableArrayList(courseDAO.list()));
+        // Open database connection
+        Util.openDbConnection();
 
-            // Initialize students table.
-            placeholder = new Text("Create or select a course to begin.");
-            placeholder.setFont(Font.font(Constants.PLACEHOLDER_SIZE));
-            placeholder.wrappingWidthProperty().bind(window.widthProperty());
-            placeholder.setTextAlignment(TextAlignment.CENTER);
-            studentsTable.setPlaceholder(placeholder);
-            courseSelect.getSelectionModel().selectedItemProperty().addListener((x, y, z) -> loadStudents());
+        // Initialize choice box.
+        courseSelect.setItems(FXCollections.observableArrayList(Course.findAll()));
 
-            // Listen for cards.
-            Util.submitBackgroundTask(Errors.dialog().wrap(() -> {
-                while (!Thread.interrupted()) {
-                    // Wait until a valid course is selected.
-                    await().atMost(FOREVER).until(this::getSelectedCourse, is(notNullValue()));
+        // Initialize students table.
+        placeholder = new Text("Create or select a course to begin.");
+        placeholder.setFont(Font.font(Constants.PLACEHOLDER_SIZE));
+        placeholder.wrappingWidthProperty().bind(window.widthProperty());
+        placeholder.setTextAlignment(TextAlignment.CENTER);
+        studentsTable.setPlaceholder(placeholder);
+        courseSelect.getSelectionModel().selectedItemProperty().addListener((x, y, z) -> loadStudents());
 
-                    // Get UID.
-                    int uid = cardReader.readUID();
-                    Optional<Student> oStudent = studentDAO.getById(uid);
+        // Listen for cards.
+        Util.submitBackgroundTask(Errors.dialog().wrap(() -> {
+            while (!Thread.interrupted()) {
+                // Wait until a valid course is selected.
+                await().atMost(FOREVER).until(this::getSelectedCourse, is(notNullValue()));
 
-                    // Get selected course.
-                    Course course = getSelectedCourse();
-                    if (course == null) continue;
+                // Get UID.
+                int uid = cardReader.readUID();
+                Optional<Student> oStudent = Optional.ofNullable(Student.findById(uid));
 
-                    // Either mark student's attendance, enroll the student, or register the student.
-                    if (oStudent.isPresent() && studentsTable.getItems().contains(oStudent.get())) {
-                        oStudent.get().attend(course);
-                        Platform.runLater(() -> studentsTable.refresh());
-                    } else if (oStudent.isPresent()) {
-                        Platform.runLater(() -> enrollStudent(oStudent.get(), course));
-                    } else {
-                        Platform.runLater(() -> addStudent(uid, course));
-                    }
-                    cardTerminal.waitForCardAbsent(0);
+                // Get selected course.
+                Course course = getSelectedCourse();
+                if (course == null) continue;
+
+                // Either mark student's attendance, enroll the student, or register the student.
+                if (oStudent.isPresent() && studentsTable.getItems().contains(oStudent.get())) {
+                    oStudent.get().attend(course);
+                    Platform.runLater(() -> studentsTable.refresh());
+                } else if (oStudent.isPresent()) {
+                    Platform.runLater(() -> enrollStudent(oStudent.get(), course));
+                } else {
+                    Platform.runLater(() -> addStudent(uid, course));
                 }
-            }));
-        } catch (SQLException e) {
-            DialogFactory.showThrowableDialog(e);
-        }
+                cardTerminal.waitForCardAbsent(0);
+            }
+        }));
     }
 
     /**
@@ -144,10 +143,10 @@ public class Controller implements Initializable {
     private void addStudent(int studentId, Course course) {
         // Ask the instructor if they wish to add a new student.
         if (DialogFactory.getAddStudentDialog().showAndWait().orElse(null) == ButtonType.OK) {
-            Student newStudent = studentDAO.newStudent();
+            Student newStudent = new Student();
             newStudent.setStudentId(studentId);
             DialogFactory.showStudentDialog(newStudent).ifPresent(Errors.dialog().wrap(s -> {
-                s.insert();
+                s.checkedInsert();
                 if (course != null) {
                     s.enroll(course);
                     studentsTable.getItems().add(s);
@@ -177,68 +176,65 @@ public class Controller implements Initializable {
      * Loads students into the students table.
      */
     private void loadStudents() {
-        try {
-            // Get selected course.
-            Course selected = getSelectedCourse();
+        // Get selected course.
+        Course selected = getSelectedCourse();
 
-            // Initialize table.
-            idCol.setCellValueFactory(new PropertyValueFactory<>("studentId"));
+        // Initialize table.
+        idCol.setCellValueFactory(new PropertyValueFactory<>("studentId"));
 
-            lastNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
-            lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-            lastNameCol.setOnEditCommit(edit -> {
-                Student student = edit.getRowValue();
-                student.setLastName(edit.getNewValue());
-                try {
-                    student.update();
-                } catch (SQLException e) {
-                    throw Lombok.sneakyThrow(e);
-                }
-            });
-
-            firstNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
-            firstNameCol.setCellValueFactory(new PropertyValueFactory<>("firstName"));
-            firstNameCol.setOnEditCommit(edit -> {
-                Student student = edit.getRowValue();
-                student.setFirstName(edit.getNewValue());
-                try {
-                    student.update();
-                } catch (SQLException e) {
-                    throw Lombok.sneakyThrow(e);
-                }
-            });
-
-            middleNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
-            middleNameCol.setCellValueFactory(new PropertyValueFactory<>("middleName"));
-            middleNameCol.setOnEditCommit(edit -> {
-                Student student = edit.getRowValue();
-                student.setMiddleName(edit.getNewValue());
-                try {
-                    student.update();
-                } catch (SQLException e) {
-                    throw Lombok.sneakyThrow(e);
-                }
-            });
-
-            statusCol.setCellValueFactory(param -> {
-                try {
-                    return new SimpleStringProperty(param.getValue().getStatus(selected));
-                } catch (SQLException e) {
-                    throw Lombok.sneakyThrow(e);
-                }
-            });
-
-            // Populate table.
-            if (selected == null) {
-                placeholder.setText("Create or select a course to begin.");
-                studentsTable.getItems().clear();
-            } else {
-                placeholder.setText(String.format("Tap student ID card to enroll them in %s.", selected));
-                int crn = getSelectedCourse().getKey();
-                studentsTable.setItems(FXCollections.observableList(studentDAO.list(crn)));
+        lastNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+        lastNameCol.setOnEditCommit(edit -> {
+            Student student = edit.getRowValue();
+            student.setLastName(edit.getNewValue());
+            try {
+                student.checkedUpdate();
+            } catch (SQLException e) {
+                DialogFactory.showThrowableDialog(e);
             }
-        } catch (SQLException e) {
-            DialogFactory.showThrowableDialog(e);
+        });
+
+        firstNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        firstNameCol.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+        firstNameCol.setOnEditCommit(edit -> {
+            Student student = edit.getRowValue();
+            student.setFirstName(edit.getNewValue());
+            try {
+                student.checkedUpdate();
+            } catch (SQLException e) {
+                DialogFactory.showThrowableDialog(e);
+            }
+        });
+
+        middleNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        middleNameCol.setCellValueFactory(new PropertyValueFactory<>("middleName"));
+        middleNameCol.setOnEditCommit(edit -> {
+            Student student = edit.getRowValue();
+            student.setMiddleName(edit.getNewValue());
+            try {
+                student.checkedUpdate();
+            } catch (SQLException e) {
+                DialogFactory.showThrowableDialog(e);
+            }
+        });
+
+        statusCol.setCellValueFactory(param -> {
+            try {
+                return new SimpleStringProperty(param.getValue().getStatus(selected));
+            } catch (SQLException e) {
+                DialogFactory.showThrowableDialog(e);
+                return new SimpleStringProperty();
+            }
+        });
+
+        // Populate table.
+        if (selected == null) {
+            placeholder.setText("Create or select a course to begin.");
+            studentsTable.getItems().clear();
+        } else {
+            placeholder.setText(String.format("Tap student ID card to enroll them in %s.", selected));
+            int crn = getSelectedCourse().getCrn();
+            studentsTable.setItems(FXCollections.observableList(Student.findByCrn(crn)));
         }
     }
 
@@ -248,12 +244,12 @@ public class Controller implements Initializable {
     public void updateStudent() {
         courseSelect.getSelectionModel().clearSelection();
         DialogFactory.showAsyncWaitForCardDialog(cardReader, Errors.dialog().wrap(uid -> {
-            Optional<Student> oStudent = studentDAO.getById(uid);
+            Optional<Student> oStudent = Optional.ofNullable(Student.findById(uid));
             if (oStudent.isPresent()) {
                 Optional<Student> result = DialogFactory.showStudentDialog(oStudent.get());
                 if (result.isPresent()) {
                     Student student = result.get();
-                    student.update();
+                    student.checkedUpdate();
                     DialogFactory.showObjectUpdatedDialog(student);
                 }
             } else {
@@ -268,12 +264,12 @@ public class Controller implements Initializable {
     public void deleteStudent() {
         courseSelect.getSelectionModel().clearSelection();
         DialogFactory.showAsyncWaitForCardDialog(cardReader, Errors.dialog().wrap(uid -> {
-            Optional<Student> oStudent = studentDAO.getById(uid);
+            Optional<Student> oStudent = Optional.ofNullable(Student.findById(uid));
             if (oStudent.isPresent()) {
                 DialogFactory.getDeleteStudentDialog(oStudent.get()).showAndWait().ifPresent(Errors.dialog().wrap(buttonType -> {
                     Student student = oStudent.get();
                     if (buttonType == ButtonType.OK) {
-                        student.delete();
+                        student.checkedDelete();
                     }
                     DialogFactory.showObjectDeletedDialog(student);
                 }));
@@ -287,8 +283,8 @@ public class Controller implements Initializable {
      * Provide the dialog for the instructor to add a course.
      */
     public void addCourse() {
-        DialogFactory.showCourseDialog(courseDAO.newCourse()).ifPresent(Errors.dialog().wrap(c -> {
-            c.insert();
+        DialogFactory.showCourseDialog(new Course()).ifPresent(Errors.dialog().wrap(c -> {
+            c.checkedInsert();
             courseSelect.getItems().add(c);
             courseSelect.getSelectionModel().selectLast();
         }));
@@ -304,7 +300,7 @@ public class Controller implements Initializable {
             DialogFactory.showNoCourseSelectedDialog();
         } else {
             DialogFactory.showCourseDialog(selected).ifPresent(Errors.dialog().wrap(c -> {
-                c.update();
+                c.checkedUpdate();
                 courseSelect.getItems().set(index, c);
                 DialogFactory.showObjectUpdatedDialog(c);
             }));
@@ -322,7 +318,7 @@ public class Controller implements Initializable {
         } else {
             DialogFactory.getDeleteCourseDialog(selected).showAndWait().ifPresent(Errors.dialog().wrap(buttonType -> {
                 if (buttonType == ButtonType.OK) {
-                    selected.delete();
+                    selected.checkedDelete();
                     courseSelect.getItems().remove(index);
                     loadStudents();
                     DialogFactory.showObjectDeletedDialog(selected);
@@ -363,7 +359,23 @@ public class Controller implements Initializable {
      * Terminate the application.
      */
     public void quit() {
+        Util.closeDbConnection();
         Platform.exit();
+    }
+
+    /**
+     * Get card reader.
+     *
+     * @return The {@link CardTerminal}
+     * @throws CardException if the card operation failed
+     */
+    private CardTerminal getCardTerminal() throws CardException {
+        TerminalFactory terminalFactory = TerminalFactory.getDefault();
+        List<CardTerminal> terminals = terminalFactory.terminals().list();
+        log.info("Available terminals: {}", terminals);
+        CardTerminal cardTerminal = terminals.get(0);
+        log.info("Commands will be sent to {}", cardTerminal.getName());
+        return cardTerminal;
     }
 
     // TODO: Implement.

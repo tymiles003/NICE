@@ -1,79 +1,53 @@
 package com.sudicode.nice.database;
 
 import lombok.EqualsAndHashCode;
-import org.apache.commons.dbutils.QueryRunner;
+import org.javalite.activejdbc.Model;
+import org.javalite.activejdbc.annotations.IdName;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 
 /**
  * Course in the database.
  */
-@EqualsAndHashCode
-public class Course {
+@EqualsAndHashCode(callSuper = false)
+@IdName("crn")
+public class Course extends Model {
 
-    private final transient DataSource dataSource;
-
-    /**
-     * Database key, which may differ in state from crn
-     */
-    private transient Integer key;
-
-    private int crn;
+    private Integer crn;
     private String name;
     private String number;
-    private int section;
+    private Integer section;
 
-    /**
-     * Constructor.
-     *
-     * @param dataSource The {@link DataSource} that this course originates from
-     */
-    Course(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
-    public int getCrn() {
-        return crn;
+    public Integer getCrn() {
+        return isFrozen() ? crn : getInteger("crn");
     }
 
     public void setCrn(int crn) {
-        this.crn = crn;
-        if (getKey() == null) {
-            setKey(crn);
-        }
-    }
-
-    public Integer getKey() {
-        return key;
-    }
-
-    public void setKey(Integer key) {
-        this.key = key;
+        setInteger("crn", crn);
     }
 
     public String getName() {
-        return name;
+        return isFrozen() ? name : getString("name");
     }
 
     public void setName(String name) {
-        this.name = name;
+        setString("name", name);
     }
 
     public String getNumber() {
-        return number;
+        return isFrozen() ? number : getString("number");
     }
 
     public void setNumber(String number) {
-        this.number = number;
+        setString("number", number);
     }
 
-    public int getSection() {
-        return section;
+    public Integer getSection() {
+        return isFrozen() ? section : getInteger("section");
     }
 
     public void setSection(int section) {
-        this.section = section;
+        setString("section", section);
     }
 
     /**
@@ -81,13 +55,10 @@ public class Course {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void insert() throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        String sql = "INSERT INTO Courses VALUES (?, ?, ?, ?)";
-        if (run.update(sql, getCrn(), getName(), getNumber(), getSection()) != 1) {
+    public void checkedInsert() throws SQLException {
+        if (!insert()) {
             throw new SQLException("Insert failed.");
         }
-        setKey(getCrn());
     }
 
     /**
@@ -95,14 +66,10 @@ public class Course {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void update() throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        String sql = "UPDATE Courses SET crn = ?, name = ?, number = ?, section = ? "
-                + "WHERE crn = ?";
-        if (run.update(sql, getCrn(), getName(), getNumber(), getSection(), getKey()) != 1) {
+    public void checkedUpdate() throws SQLException {
+        if (!saveIt()) {
             throw new SQLException("Update failed.");
         }
-        setKey(getCrn());
     }
 
     /**
@@ -110,10 +77,12 @@ public class Course {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void delete() throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        String sql = "DELETE FROM Courses WHERE crn = ?";
-        if (run.update(sql, getKey()) != 1) {
+    public void checkedDelete() throws SQLException {
+        this.crn = getCrn();
+        this.name = getName();
+        this.number = getNumber();
+        this.section = getSection();
+        if (!delete()) {
             throw new SQLException("Delete failed.");
         }
     }

@@ -1,25 +1,23 @@
 package com.sudicode.nice.database;
 
 import lombok.EqualsAndHashCode;
-import org.apache.commons.dbutils.QueryRunner;
+import org.javalite.activejdbc.Base;
+import org.javalite.activejdbc.Model;
+import org.javalite.activejdbc.annotations.IdName;
 
-import javax.sql.DataSource;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Student in the database.
  */
-@EqualsAndHashCode
-public class Student {
-
-    private final transient DataSource dataSource;
-
-    /**
-     * Database key, which may differ in state from studentId
-     */
-    private transient Integer key;
+@EqualsAndHashCode(callSuper = false)
+@IdName("studentid")
+public class Student extends Model {
 
     private int studentId;
     private String firstName;
@@ -27,64 +25,44 @@ public class Student {
     private String lastName;
     private String email;
 
-    /**
-     * Constructor.
-     *
-     * @param dataSource The {@link DataSource} that this student originates from
-     */
-    Student(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
     public int getStudentId() {
-        return studentId;
+        return isFrozen() ? studentId : getInteger("studentid");
     }
 
     public void setStudentId(int studentId) {
-        this.studentId = studentId;
-        if (getKey() == null) {
-            setKey(studentId);
-        }
-    }
-
-    public Integer getKey() {
-        return key;
-    }
-
-    public void setKey(Integer key) {
-        this.key = key;
+        setInteger("studentid", studentId);
     }
 
     public String getFirstName() {
-        return firstName;
+        return isFrozen() ? firstName : getString("firstname");
     }
 
     public void setFirstName(String firstName) {
-        this.firstName = firstName;
+        setString("firstname", firstName);
     }
 
     public String getMiddleName() {
-        return middleName;
+        return isFrozen() ? middleName : getString("middlename");
     }
 
     public void setMiddleName(String middleName) {
-        this.middleName = middleName;
+        setString("middlename", middleName);
     }
 
     public String getLastName() {
-        return lastName;
+        return isFrozen() ? lastName : getString("lastname");
     }
 
     public void setLastName(String lastName) {
-        this.lastName = lastName;
+        setString("lastname", lastName);
     }
 
     public String getEmail() {
-        return email;
+        return isFrozen() ? email : getString("email");
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        setString("email", email);
     }
 
     /**
@@ -96,16 +74,18 @@ public class Student {
      */
     public String getStatus(Course course) throws SQLException {
         // Query the database.
-        QueryRunner run = new QueryRunner(dataSource);
         String sql = "SELECT datetime "
                 + "FROM Attendances "
                 + "WHERE studentid = ? AND crn = ?";
-        Timestamp timestamp = run.query(sql, rs -> {
-            if (!rs.next()) {
-                return null;
+        Timestamp timestamp = null;
+        try (PreparedStatement ps = Base.connection().prepareStatement(sql)) {
+            ps.setInt(1, getStudentId());
+            ps.setInt(2, course.getCrn());
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                timestamp = rs.getTimestamp("datetime");
             }
-            return rs.getTimestamp("datetime");
-        }, getKey(), course.getKey());
+        }
 
         // Return status.
         if (timestamp == null) {
@@ -122,13 +102,10 @@ public class Student {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void insert() throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        String sql = "INSERT INTO Students VALUES (?, ?, ?, ?, ?)";
-        if (run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail()) != 1) {
+    public void checkedInsert() throws SQLException {
+        if (!insert()) {
             throw new SQLException("Insert failed.");
         }
-        setKey(getStudentId());
     }
 
     /**
@@ -136,14 +113,10 @@ public class Student {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void update() throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        String sql = "UPDATE Students SET studentid = ?, firstname = ?, middlename = ?, lastname = ?, email = ? "
-                + "WHERE studentid = ?";
-        if (run.update(sql, getStudentId(), getFirstName(), getMiddleName(), getLastName(), getEmail(), getKey()) != 1) {
+    public void checkedUpdate() throws SQLException {
+        if (!saveIt()) {
             throw new SQLException("Update failed.");
         }
-        setKey(getStudentId());
     }
 
     /**
@@ -151,9 +124,13 @@ public class Student {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void delete() throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        if (run.update("DELETE FROM Students WHERE studentid = ?", getKey()) != 1) {
+    public void checkedDelete() throws SQLException {
+        this.studentId = getStudentId();
+        this.firstName = getFirstName();
+        this.middleName = getMiddleName();
+        this.lastName = getLastName();
+        this.email = getEmail();
+        if (!delete()) {
             throw new SQLException("Delete failed.");
         }
     }
@@ -165,9 +142,13 @@ public class Student {
      * @throws SQLException if a database access error occurs
      */
     public void enroll(Course course) throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        if (run.update("INSERT INTO Registrations (studentid, crn) VALUES (?, ?)", getKey(), course.getKey()) != 1) {
-            throw new SQLException("Enroll failed.");
+        String sql = "INSERT INTO Registrations (studentid, crn) VALUES (?, ?)";
+        try (PreparedStatement ps = Base.connection().prepareStatement(sql)) {
+            ps.setInt(1, getStudentId());
+            ps.setInt(2, course.getCrn());
+            if (ps.executeUpdate() != 1) {
+                throw new SQLException("Enroll failed.");
+            }
         }
     }
 
@@ -178,10 +159,28 @@ public class Student {
      * @throws SQLException if a database access error occurs
      */
     public void attend(Course course) throws SQLException {
-        QueryRunner run = new QueryRunner(dataSource);
-        if (run.update("INSERT INTO Attendances (studentid, crn) VALUES (?, ?)", getKey(), course.getKey()) != 1) {
-            throw new SQLException("Attend failed.");
+        String sql = "INSERT INTO Attendances (studentid, crn) VALUES (?, ?)";
+        try (PreparedStatement ps = Base.connection().prepareStatement(sql)) {
+            ps.setInt(1, getStudentId());
+            ps.setInt(2, course.getCrn());
+            if (ps.executeUpdate() != 1) {
+                throw new SQLException("Enroll failed.");
+            }
         }
+    }
+
+    /**
+     * Obtain a list of students who are enrolled in a course.
+     *
+     * @param crn Course registration number
+     * @return List of students
+     */
+    public static List<Student> findByCrn(int crn) {
+        String sql = "SELECT s.studentid, s.firstname, s.middlename, s.lastname, s.email "
+                + "FROM Students s "
+                + "NATURAL JOIN Registrations r "
+                + "WHERE r.crn = ? ";
+        return findBySQL(sql, crn);
     }
 
     @Override

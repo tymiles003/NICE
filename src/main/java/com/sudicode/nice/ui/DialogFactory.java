@@ -246,13 +246,14 @@ public class DialogFactory {
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
 
-        TextField crnField = new TextField(course.getCrn() != 0 ? String.valueOf(course.getCrn()) : "");
+        TextField crnField = new TextField(course.getCrn() != null ? String.valueOf(course.getCrn()) : "");
         crnField.setPromptText("CRN");
+        crnField.setDisable(course.getCrn() != null);
         TextField nameField = new TextField(course.getName());
         nameField.setPromptText("Course Name");
         TextField numField = new TextField(course.getNumber());
         numField.setPromptText("Course Number");
-        TextField sectField = new TextField(course.getSection() != 0 ? String.valueOf(course.getSection()) : "");
+        TextField sectField = new TextField(course.getSection() != null ? String.valueOf(course.getSection()) : "");
         sectField.setPromptText("Course Section");
 
         grid.add(new Label("Course Name:"), 0, 0);
