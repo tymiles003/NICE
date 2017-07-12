@@ -146,7 +146,7 @@ public class Controller implements Initializable {
             Student newStudent = new Student();
             newStudent.setStudentId(studentId);
             DialogFactory.showStudentDialog(newStudent).ifPresent(Errors.dialog().wrap(s -> {
-                s.checkedInsert();
+                s.insert();
                 if (course != null) {
                     s.enroll(course);
                     studentsTable.getItems().add(s);
@@ -187,11 +187,7 @@ public class Controller implements Initializable {
         lastNameCol.setOnEditCommit(edit -> {
             Student student = edit.getRowValue();
             student.setLastName(edit.getNewValue());
-            try {
-                student.checkedUpdate();
-            } catch (SQLException e) {
-                DialogFactory.showThrowableDialog(e);
-            }
+            student.saveIt();
         });
 
         firstNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -199,11 +195,7 @@ public class Controller implements Initializable {
         firstNameCol.setOnEditCommit(edit -> {
             Student student = edit.getRowValue();
             student.setFirstName(edit.getNewValue());
-            try {
-                student.checkedUpdate();
-            } catch (SQLException e) {
-                DialogFactory.showThrowableDialog(e);
-            }
+            student.saveIt();
         });
 
         middleNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -211,11 +203,7 @@ public class Controller implements Initializable {
         middleNameCol.setOnEditCommit(edit -> {
             Student student = edit.getRowValue();
             student.setMiddleName(edit.getNewValue());
-            try {
-                student.checkedUpdate();
-            } catch (SQLException e) {
-                DialogFactory.showThrowableDialog(e);
-            }
+            student.saveIt();
         });
 
         statusCol.setCellValueFactory(param -> {
@@ -249,7 +237,7 @@ public class Controller implements Initializable {
                 Optional<Student> result = DialogFactory.showStudentDialog(oStudent.get());
                 if (result.isPresent()) {
                     Student student = result.get();
-                    student.checkedUpdate();
+                    student.saveIt();
                     DialogFactory.showObjectUpdatedDialog(student);
                 }
             } else {
@@ -269,7 +257,7 @@ public class Controller implements Initializable {
                 DialogFactory.getDeleteStudentDialog(oStudent.get()).showAndWait().ifPresent(Errors.dialog().wrap(buttonType -> {
                     Student student = oStudent.get();
                     if (buttonType == ButtonType.OK) {
-                        student.checkedDelete();
+                        student.deleteIt();
                     }
                     DialogFactory.showObjectDeletedDialog(student);
                 }));
@@ -284,7 +272,7 @@ public class Controller implements Initializable {
      */
     public void addCourse() {
         DialogFactory.showCourseDialog(new Course()).ifPresent(Errors.dialog().wrap(c -> {
-            c.checkedInsert();
+            c.insert();
             courseSelect.getItems().add(c);
             courseSelect.getSelectionModel().selectLast();
         }));
@@ -300,7 +288,7 @@ public class Controller implements Initializable {
             DialogFactory.showNoCourseSelectedDialog();
         } else {
             DialogFactory.showCourseDialog(selected).ifPresent(Errors.dialog().wrap(c -> {
-                c.checkedUpdate();
+                c.saveIt();
                 courseSelect.getItems().set(index, c);
                 DialogFactory.showObjectUpdatedDialog(c);
             }));
@@ -318,7 +306,7 @@ public class Controller implements Initializable {
         } else {
             DialogFactory.getDeleteCourseDialog(selected).showAndWait().ifPresent(Errors.dialog().wrap(buttonType -> {
                 if (buttonType == ButtonType.OK) {
-                    selected.checkedDelete();
+                    selected.deleteIt();
                     courseSelect.getItems().remove(index);
                     loadStudents();
                     DialogFactory.showObjectDeletedDialog(selected);

@@ -9,18 +9,22 @@ import com.sudicode.nice.hardware.CardReader;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.stage.Stage;
+import jfxtras.scene.control.LocalTimeTextField;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.validator.routines.IntegerValidator;
@@ -256,6 +260,109 @@ public class DialogFactory {
         TextField sectField = new TextField(course.getSection() != null ? String.valueOf(course.getSection()) : "");
         sectField.setPromptText("Course Section");
 
+        LocalTimeTextField mondayFrom = new LocalTimeTextField();
+        LocalTimeTextField mondayTo = new LocalTimeTextField();
+        HBox mondayTimeRange = new HBox(mondayFrom, new Label("to:"), mondayTo);
+        mondayTimeRange.setSpacing(10);
+        mondayTimeRange.setAlignment(Pos.CENTER);
+
+        CheckBox mondayCheckBox = new CheckBox("Monday");
+        mondayCheckBox.setSelected(course.getMondayStart() != null && course.getMondayEnd() != null);
+        mondayFrom.disableProperty().bind(mondayCheckBox.selectedProperty().not());
+        mondayTo.disableProperty().bind(mondayCheckBox.selectedProperty().not());
+
+        LocalTimeTextField tuesdayFrom = new LocalTimeTextField();
+        LocalTimeTextField tuesdayTo = new LocalTimeTextField();
+        HBox tuesdayTimeRange = new HBox(tuesdayFrom, new Label("to:"), tuesdayTo);
+        tuesdayTimeRange.setSpacing(10);
+        tuesdayTimeRange.setAlignment(Pos.CENTER);
+
+        CheckBox tuesdayCheckBox = new CheckBox("Tuesday");
+        tuesdayCheckBox.setSelected(course.getTuesdayStart() != null && course.getTuesdayEnd() != null);
+        tuesdayFrom.disableProperty().bind(tuesdayCheckBox.selectedProperty().not());
+        tuesdayTo.disableProperty().bind(tuesdayCheckBox.selectedProperty().not());
+
+        LocalTimeTextField wednesdayFrom = new LocalTimeTextField();
+        LocalTimeTextField wednesdayTo = new LocalTimeTextField();
+        HBox wednesdayTimeRange = new HBox(wednesdayFrom, new Label("to:"), wednesdayTo);
+        wednesdayTimeRange.setSpacing(10);
+        wednesdayTimeRange.setAlignment(Pos.CENTER);
+
+        CheckBox wednesdayCheckBox = new CheckBox("Wednesday");
+        wednesdayCheckBox.setSelected(course.getWednesdayStart() != null && course.getWednesdayEnd() != null);
+        wednesdayFrom.disableProperty().bind(wednesdayCheckBox.selectedProperty().not());
+        wednesdayTo.disableProperty().bind(wednesdayCheckBox.selectedProperty().not());
+
+        LocalTimeTextField thursdayFrom = new LocalTimeTextField();
+        LocalTimeTextField thursdayTo = new LocalTimeTextField();
+        HBox thursdayTimeRange = new HBox(thursdayFrom, new Label("to:"), thursdayTo);
+        thursdayTimeRange.setSpacing(10);
+        thursdayTimeRange.setAlignment(Pos.CENTER);
+
+        CheckBox thursdayCheckBox = new CheckBox("Thursday");
+        thursdayCheckBox.setSelected(course.getThursdayStart() != null && course.getThursdayEnd() != null);
+        thursdayFrom.disableProperty().bind(thursdayCheckBox.selectedProperty().not());
+        thursdayTo.disableProperty().bind(thursdayCheckBox.selectedProperty().not());
+
+        LocalTimeTextField fridayFrom = new LocalTimeTextField();
+        LocalTimeTextField fridayTo = new LocalTimeTextField();
+        HBox fridayTimeRange = new HBox(fridayFrom, new Label("to:"), fridayTo);
+        fridayTimeRange.setSpacing(10);
+        fridayTimeRange.setAlignment(Pos.CENTER);
+
+        CheckBox fridayCheckBox = new CheckBox("Friday");
+        fridayCheckBox.setSelected(course.getFridayStart() != null && course.getFridayEnd() != null);
+        fridayFrom.disableProperty().bind(fridayCheckBox.selectedProperty().not());
+        fridayTo.disableProperty().bind(fridayCheckBox.selectedProperty().not());
+
+        LocalTimeTextField saturdayFrom = new LocalTimeTextField();
+        LocalTimeTextField saturdayTo = new LocalTimeTextField();
+        HBox saturdayTimeRange = new HBox(saturdayFrom, new Label("to:"), saturdayTo);
+        saturdayTimeRange.setSpacing(10);
+        saturdayTimeRange.setAlignment(Pos.CENTER);
+
+        CheckBox saturdayCheckBox = new CheckBox("Saturday");
+        saturdayCheckBox.setSelected(course.getSaturdayStart() != null && course.getSaturdayEnd() != null);
+        saturdayFrom.disableProperty().bind(saturdayCheckBox.selectedProperty().not());
+        saturdayTo.disableProperty().bind(saturdayCheckBox.selectedProperty().not());
+
+        if (course.getMondayStart() != null) {
+            mondayFrom.setLocalTime(course.getMondayStart());
+        }
+        if (course.getMondayEnd() != null) {
+            mondayTo.setLocalTime(course.getMondayEnd());
+        }
+        if (course.getTuesdayStart() != null) {
+            tuesdayFrom.setLocalTime(course.getTuesdayStart());
+        }
+        if (course.getTuesdayEnd() != null) {
+            tuesdayTo.setLocalTime(course.getTuesdayEnd());
+        }
+        if (course.getWednesdayStart() != null) {
+            wednesdayFrom.setLocalTime(course.getWednesdayStart());
+        }
+        if (course.getWednesdayEnd() != null) {
+            wednesdayTo.setLocalTime(course.getWednesdayEnd());
+        }
+        if (course.getThursdayStart() != null) {
+            thursdayFrom.setLocalTime(course.getThursdayStart());
+        }
+        if (course.getThursdayEnd() != null) {
+            thursdayTo.setLocalTime(course.getThursdayEnd());
+        }
+        if (course.getFridayStart() != null) {
+            fridayFrom.setLocalTime(course.getFridayStart());
+        }
+        if (course.getFridayEnd() != null) {
+            fridayTo.setLocalTime(course.getFridayEnd());
+        }
+        if (course.getSaturdayStart() != null) {
+            saturdayFrom.setLocalTime(course.getSaturdayStart());
+        }
+        if (course.getSaturdayEnd() != null) {
+            saturdayTo.setLocalTime(course.getSaturdayEnd());
+        }
+
         grid.add(new Label("Course Name:"), 0, 0);
         grid.add(nameField, 1, 0);
         grid.add(new Label("Course Number:"), 0, 1);
@@ -264,6 +371,18 @@ public class DialogFactory {
         grid.add(sectField, 1, 2);
         grid.add(new Label("CRN:"), 0, 3);
         grid.add(crnField, 1, 3);
+        grid.add(mondayCheckBox, 0, 4);
+        grid.add(mondayTimeRange, 1, 4);
+        grid.add(tuesdayCheckBox, 0, 5);
+        grid.add(tuesdayTimeRange, 1, 5);
+        grid.add(wednesdayCheckBox, 0, 6);
+        grid.add(wednesdayTimeRange, 1, 6);
+        grid.add(thursdayCheckBox, 0, 7);
+        grid.add(thursdayTimeRange, 1, 7);
+        grid.add(fridayCheckBox, 0, 8);
+        grid.add(fridayTimeRange, 1, 8);
+        grid.add(saturdayCheckBox, 0, 9);
+        grid.add(saturdayTimeRange, 1, 9);
 
         // Do some validation.
         Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
@@ -287,6 +406,48 @@ public class DialogFactory {
                 course.setName(nameField.getText());
                 course.setNumber(numField.getText());
                 course.setSection(Integer.parseInt(sectField.getText()));
+                if (mondayCheckBox.isSelected()) {
+                    course.setMondayStart(mondayFrom.getLocalTime());
+                    course.setMondayEnd(mondayTo.getLocalTime());
+                } else {
+                    course.setMondayStart(null);
+                    course.setMondayEnd(null);
+                }
+                if (tuesdayCheckBox.isSelected()) {
+                    course.setTuesdayStart(tuesdayFrom.getLocalTime());
+                    course.setTuesdayEnd(tuesdayTo.getLocalTime());
+                } else {
+                    course.setTuesdayStart(null);
+                    course.setTuesdayEnd(null);
+                }
+                if (wednesdayCheckBox.isSelected()) {
+                    course.setWednesdayStart(wednesdayFrom.getLocalTime());
+                    course.setWednesdayEnd(wednesdayTo.getLocalTime());
+                } else {
+                    course.setWednesdayStart(null);
+                    course.setWednesdayEnd(null);
+                }
+                if (thursdayCheckBox.isSelected()) {
+                    course.setThursdayStart(thursdayFrom.getLocalTime());
+                    course.setThursdayEnd(thursdayTo.getLocalTime());
+                } else {
+                    course.setThursdayStart(null);
+                    course.setThursdayEnd(null);
+                }
+                if (fridayCheckBox.isSelected()) {
+                    course.setFridayStart(fridayFrom.getLocalTime());
+                    course.setFridayEnd(fridayTo.getLocalTime());
+                } else {
+                    course.setFridayStart(null);
+                    course.setFridayEnd(null);
+                }
+                if (saturdayCheckBox.isSelected()) {
+                    course.setSaturdayStart(saturdayFrom.getLocalTime());
+                    course.setSaturdayEnd(saturdayTo.getLocalTime());
+                } else {
+                    course.setSaturdayStart(null);
+                    course.setSaturdayEnd(null);
+                }
                 return course;
             }
             return null;

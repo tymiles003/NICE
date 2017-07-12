@@ -5,8 +5,6 @@ import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.TimeZone;
-
 /**
  * Utility class.
  */
@@ -44,13 +42,13 @@ public class Util {
     public static void openDbConnection() {
         Base.open(
                 Driver.class.getName(),
-                String.format("jdbc:mysql://%s/%s" +
-                        "?useUnicode=true" +
-                        "&useJDBCCompliantTimezoneShift=true" +
-                        "&useLegacyDatetimeCode=false" +
-                        "&serverTimezone=%s" +
-                        "&nullNamePatternMatchesAll=true" +
-                        "&useSSL=false", Constants.DB_SERVER, Constants.DB_NAME, TimeZone.getDefault().getID()),
+                String.format("jdbc:mysql://%s/%s"
+                        + "?useUnicode=true"
+                        + "&useJDBCCompliantTimezoneShift=true"
+                        + "&useLegacyDatetimeCode=false"
+                        + "&serverTimezone=%s"
+                        + "&nullNamePatternMatchesAll=true"
+                        + "&useSSL=false", Constants.DB_SERVER, Constants.DB_NAME, "UTC"),
                 Constants.DB_USER,
                 Constants.DB_PW);
     }
@@ -59,8 +57,8 @@ public class Util {
      * Closes connection and detaches it from current thread.
      */
     public static void closeDbConnection() {
-        log.info("Closed DB connection.");
         Base.close();
+        log.info("Closed DB connection.");
     }
 
 }

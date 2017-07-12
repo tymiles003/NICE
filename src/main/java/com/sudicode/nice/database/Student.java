@@ -4,12 +4,16 @@ import lombok.EqualsAndHashCode;
 import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.IdName;
+import org.javalite.activejdbc.annotations.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -17,7 +21,10 @@ import java.util.List;
  */
 @EqualsAndHashCode(callSuper = false)
 @IdName("studentid")
+@Table("Students")
 public class Student extends Model {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Student.class);
 
     private int studentId;
     private String firstName;
@@ -76,7 +83,8 @@ public class Student extends Model {
         // Query the database.
         String sql = "SELECT datetime "
                 + "FROM Attendances "
-                + "WHERE studentid = ? AND crn = ?";
+                + "WHERE studentid = ? AND crn = ? AND CAST(datetime AS DATE) = CURRENT_DATE() "
+                + "ORDER BY datetime";
         Timestamp timestamp = null;
         try (PreparedStatement ps = Base.connection().prepareStatement(sql)) {
             ps.setInt(1, getStudentId());
@@ -88,51 +96,66 @@ public class Student extends Model {
         }
 
         // Return status.
-        if (timestamp == null) {
+        LocalTime courseStart, courseEnd;
+        LocalDateTime now = LocalDateTime.now();
+        switch (now.getDayOfWeek()) {
+            case MONDAY:
+                courseStart = course.getMondayStart();
+                courseEnd = course.getMondayEnd();
+                break;
+            case TUESDAY:
+                courseStart = course.getTuesdayStart();
+                courseEnd = course.getTuesdayEnd();
+                break;
+            case WEDNESDAY:
+                courseStart = course.getWednesdayStart();
+                courseEnd = course.getWednesdayEnd();
+                break;
+            case THURSDAY:
+                courseStart = course.getThursdayStart();
+                courseEnd = course.getThursdayEnd();
+                break;
+            case FRIDAY:
+                courseStart = course.getFridayStart();
+                courseEnd = course.getFridayEnd();
+                break;
+            case SATURDAY:
+                courseStart = course.getSaturdayStart();
+                courseEnd = course.getSaturdayEnd();
+                break;
+            case SUNDAY:
+                courseStart = course.getSundayStart();
+                courseEnd = course.getSundayEnd();
+                break;
+            default:
+                throw new IllegalStateException("Invalid day of week");
+        }
+        if (courseStart == null || courseEnd == null) {
+            return "no class";
+        } else if (timestamp == null) {
+            LOG.info("No attendances found on this day.");
             return "absent";
         } else {
-            LocalDateTime dateTime = timestamp.toLocalDateTime();
-            // TODO: Need some additional logic here.
-            return "present";
-        }
-    }
-
-    /**
-     * Insert this student into its data source.
-     *
-     * @throws SQLException if a database access error occurs
-     */
-    public void checkedInsert() throws SQLException {
-        if (!insert()) {
-            throw new SQLException("Insert failed.");
-        }
-    }
-
-    /**
-     * Update this student in its data source.
-     *
-     * @throws SQLException if a database access error occurs
-     */
-    public void checkedUpdate() throws SQLException {
-        if (!saveIt()) {
-            throw new SQLException("Update failed.");
+            LocalTime attendTime = timestamp.toLocalDateTime().toLocalTime();
+            LOG.info("Class runs from {} to {}. Student's earliest attendance was at {}.", courseStart, courseEnd, attendTime);
+            if (attendTime.isAfter(courseEnd)) {
+                return "late";
+            } else {
+                return "present";
+            }
         }
     }
 
     /**
      * Delete this student from its data source.
-     *
-     * @throws SQLException if a database access error occurs
      */
-    public void checkedDelete() throws SQLException {
+    public void deleteIt() {
         this.studentId = getStudentId();
         this.firstName = getFirstName();
         this.middleName = getMiddleName();
         this.lastName = getLastName();
         this.email = getEmail();
-        if (!delete()) {
-            throw new SQLException("Delete failed.");
-        }
+        delete();
     }
 
     /**
