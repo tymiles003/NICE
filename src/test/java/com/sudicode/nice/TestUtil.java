@@ -53,6 +53,7 @@ public class TestUtil {
         course.setSaturdayEnd(end);
         course.setSundayEnd(end);
         course.saveIt();
+        course.refresh();
     }
 
 }

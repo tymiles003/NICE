@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -18,7 +18,6 @@ public class StudentTest {
 
     private static AtomicInteger counter;
 
-    private LocalDateTime now;
     private Student student;
     private Course course;
 
@@ -35,8 +34,6 @@ public class StudentTest {
 
     @Before
     public void setUp() throws Exception {
-        now = LocalDateTime.now();
-
         student = new Student();
         student.setId(counter.incrementAndGet());
         student.insert();
@@ -48,7 +45,7 @@ public class StudentTest {
 
     @Test
     public void testPresent() throws Exception {
-        TestUtil.setScheduleForEachDay(course, now.minusHours(1).toLocalTime(), now.plusHours(1).toLocalTime());
+        TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(23, 59));
         student.enroll(course);
         student.attend(course);
         assertEquals("present", student.getStatus(course));
@@ -56,7 +53,7 @@ public class StudentTest {
 
     @Test
     public void testLate() throws Exception {
-        TestUtil.setScheduleForEachDay(course, now.minusHours(1).toLocalTime(), now.minusHours(1).toLocalTime());
+        TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(0, 0));
         student.enroll(course);
         student.attend(course);
         assertEquals("late", student.getStatus(course));
@@ -70,7 +67,7 @@ public class StudentTest {
 
     @Test
     public void testAbsent() throws Exception {
-        TestUtil.setScheduleForEachDay(course, now.minusHours(1).toLocalTime(), now.minusHours(1).toLocalTime());
+        TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(0, 0));
         student.enroll(course);
         assertEquals("absent", student.getStatus(course));
     }

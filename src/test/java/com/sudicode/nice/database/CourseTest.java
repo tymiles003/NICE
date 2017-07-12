@@ -6,9 +6,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -42,23 +40,39 @@ public class CourseTest {
 
     @Test
     public void testScheduling() throws Exception {
-        LocalTime start = LocalDateTime.now().minusHours(1).toLocalTime().truncatedTo(ChronoUnit.SECONDS);
-        LocalTime end = LocalDateTime.now().plusHours(1).toLocalTime().truncatedTo(ChronoUnit.SECONDS);
-        TestUtil.setScheduleForEachDay(course, start, end);
-        assertEquals(start, course.getMondayStart());
-        assertEquals(start, course.getTuesdayStart());
-        assertEquals(start, course.getWednesdayStart());
-        assertEquals(start, course.getThursdayStart());
-        assertEquals(start, course.getFridayStart());
-        assertEquals(start, course.getSaturdayStart());
-        assertEquals(start, course.getSundayStart());
-        assertEquals(end, course.getMondayEnd());
-        assertEquals(end, course.getTuesdayEnd());
-        assertEquals(end, course.getWednesdayEnd());
-        assertEquals(end, course.getThursdayEnd());
-        assertEquals(end, course.getFridayEnd());
-        assertEquals(end, course.getSaturdayEnd());
-        assertEquals(end, course.getSundayEnd());
+        LocalTime time = LocalTime.of(0, 0);
+
+        course.setMondayStart(time);
+        course.setTuesdayStart(time.plusHours(1));
+        course.setWednesdayStart(time.plusHours(2));
+        course.setThursdayStart(time.plusHours(3));
+        course.setFridayStart(time.plusHours(4));
+        course.setSaturdayStart(time.plusHours(5));
+        course.setSundayStart(time.plusHours(6));
+        course.setMondayEnd(time.plusHours(7));
+        course.setTuesdayEnd(time.plusHours(8));
+        course.setWednesdayEnd(time.plusHours(9));
+        course.setThursdayEnd(time.plusHours(10));
+        course.setFridayEnd(time.plusHours(11));
+        course.setSaturdayEnd(time.plusHours(12));
+        course.setSundayEnd(time.plusHours(13));
+        course.saveIt();
+        course.refresh();
+
+        assertEquals(time, course.getMondayStart());
+        assertEquals(time.plusHours(1), course.getTuesdayStart());
+        assertEquals(time.plusHours(2), course.getWednesdayStart());
+        assertEquals(time.plusHours(3), course.getThursdayStart());
+        assertEquals(time.plusHours(4), course.getFridayStart());
+        assertEquals(time.plusHours(5), course.getSaturdayStart());
+        assertEquals(time.plusHours(6), course.getSundayStart());
+        assertEquals(time.plusHours(7), course.getMondayEnd());
+        assertEquals(time.plusHours(8), course.getTuesdayEnd());
+        assertEquals(time.plusHours(9), course.getWednesdayEnd());
+        assertEquals(time.plusHours(10), course.getThursdayEnd());
+        assertEquals(time.plusHours(11), course.getFridayEnd());
+        assertEquals(time.plusHours(12), course.getSaturdayEnd());
+        assertEquals(time.plusHours(13), course.getSundayEnd());
     }
 
 }
