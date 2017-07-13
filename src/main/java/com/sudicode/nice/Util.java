@@ -1,6 +1,6 @@
 package com.sudicode.nice;
 
-import com.mysql.cj.jdbc.Driver;
+import com.mysql.jdbc.Driver;
 import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,11 +44,10 @@ public class Util {
                 Driver.class.getName(),
                 String.format("jdbc:mysql://%s/%s"
                         + "?useUnicode=true"
-                        + "&useJDBCCompliantTimezoneShift=true"
-                        + "&useLegacyDatetimeCode=false"
-                        + "&serverTimezone=%s"
                         + "&nullNamePatternMatchesAll=true"
-                        + "&useSSL=false", Constants.DB_SERVER, Constants.DB_NAME, "UTC"),
+                        + "&useSSL=false"
+                        + "&logger=com.mysql.jdbc.log.Slf4JLogger"
+                        + "&profileSQL=true", Constants.DB_SERVER, Constants.DB_NAME),
                 Constants.DB_USER,
                 Constants.DB_PW);
     }

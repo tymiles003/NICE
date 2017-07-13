@@ -1,13 +1,17 @@
 package com.sudicode.nice;
 
+import com.google.common.base.Joiner;
 import com.sudicode.nice.database.Course;
+import org.h2.Driver;
 import org.javalite.activejdbc.Base;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 /**
@@ -17,10 +21,19 @@ public class TestUtil {
 
     /**
      * Opens a new connection and attaches it to the current thread.
+     *
+     * @throws IOException        if an I/O error occurs
+     * @throws SQLException       if a database access error occurs
+     * @throws URISyntaxException if this URL is not formatted strictly according to to RFC2396 and cannot be converted to a URI.
      */
     public static void openDbConnection() throws IOException, SQLException, URISyntaxException {
-        Base.open("org.h2.Driver", "jdbc:h2:mem:db1", "", "");
-        ScriptUtils.executeSqlScript(Base.connection(), new InputStreamResource(TestUtil.class.getResourceAsStream("DDL.sql")));
+        Base.open(Driver.class.getName(), "jdbc:h2:mem:nicedb;TRACE_LEVEL_FILE=4", "", "");
+        String script = Joiner.on("").join(Files.readAllLines(Paths.get(TestUtil.class.getResource("DDL.sql").toURI())));
+        for (String sql : script.split(";")) {
+            try (Statement stmt = Base.connection().createStatement()) {
+                stmt.execute(sql);
+            }
+        }
     }
 
     /**
@@ -38,20 +51,10 @@ public class TestUtil {
      * @param end    End time
      */
     public static void setScheduleForEachDay(Course course, LocalTime start, LocalTime end) {
-        course.setMondayStart(start);
-        course.setTuesdayStart(start);
-        course.setWednesdayStart(start);
-        course.setThursdayStart(start);
-        course.setFridayStart(start);
-        course.setSaturdayStart(start);
-        course.setSundayStart(start);
-        course.setMondayEnd(end);
-        course.setTuesdayEnd(end);
-        course.setWednesdayEnd(end);
-        course.setThursdayEnd(end);
-        course.setFridayEnd(end);
-        course.setSaturdayEnd(end);
-        course.setSundayEnd(end);
+        for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+            course.setStart(dayOfWeek, start);
+            course.setEnd(dayOfWeek, end);
+        }
         course.saveIt();
         course.refresh();
     }

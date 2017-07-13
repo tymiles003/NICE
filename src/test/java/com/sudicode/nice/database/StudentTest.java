@@ -35,11 +35,11 @@ public class StudentTest {
     @Before
     public void setUp() throws Exception {
         student = new Student();
-        student.setId(counter.incrementAndGet());
+        student.setStudentId(counter.incrementAndGet());
         student.insert();
 
         course = new Course();
-        course.setId(counter.incrementAndGet());
+        course.setCrn(counter.incrementAndGet());
         course.insert();
     }
 

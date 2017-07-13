@@ -5,8 +5,6 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.IdName;
 import org.javalite.activejdbc.annotations.Table;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,8 +21,6 @@ import java.util.List;
 @IdName("studentid")
 @Table("Students")
 public class Student extends Model {
-
-    private static final Logger LOG = LoggerFactory.getLogger(Student.class);
 
     private int studentId;
     private String firstName;
@@ -96,48 +92,15 @@ public class Student extends Model {
         }
 
         // Return status.
-        LocalTime courseStart, courseEnd;
         LocalDateTime now = LocalDateTime.now();
-        switch (now.getDayOfWeek()) {
-            case MONDAY:
-                courseStart = course.getMondayStart();
-                courseEnd = course.getMondayEnd();
-                break;
-            case TUESDAY:
-                courseStart = course.getTuesdayStart();
-                courseEnd = course.getTuesdayEnd();
-                break;
-            case WEDNESDAY:
-                courseStart = course.getWednesdayStart();
-                courseEnd = course.getWednesdayEnd();
-                break;
-            case THURSDAY:
-                courseStart = course.getThursdayStart();
-                courseEnd = course.getThursdayEnd();
-                break;
-            case FRIDAY:
-                courseStart = course.getFridayStart();
-                courseEnd = course.getFridayEnd();
-                break;
-            case SATURDAY:
-                courseStart = course.getSaturdayStart();
-                courseEnd = course.getSaturdayEnd();
-                break;
-            case SUNDAY:
-                courseStart = course.getSundayStart();
-                courseEnd = course.getSundayEnd();
-                break;
-            default:
-                throw new IllegalStateException("Invalid day of week");
-        }
+        LocalTime courseStart = course.getStart(now.getDayOfWeek());
+        LocalTime courseEnd = course.getEnd(now.getDayOfWeek());
         if (courseStart == null || courseEnd == null) {
             return "no class";
         } else if (timestamp == null) {
-            LOG.info("No attendances found on this day.");
             return "absent";
         } else {
             LocalTime attendTime = timestamp.toLocalDateTime().toLocalTime();
-            LOG.info("Class runs from {} to {}. Student's earliest attendance was at {}.", courseStart, courseEnd, attendTime);
             if (attendTime.isAfter(courseEnd)) {
                 return "late";
             } else {

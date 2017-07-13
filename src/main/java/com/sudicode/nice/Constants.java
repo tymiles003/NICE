@@ -16,5 +16,6 @@ public class Constants {
     public static final int PLACEHOLDER_SIZE = 24;
     public static final String ICON_URL = Constants.class.getResource("wit.png").toExternalForm();
     public static final String STYLESHEET_URL = Constants.class.getResource("bootstrap3.css").toExternalForm();
+    public static final int DAYS_OF_WEEK = 7;
 
 }

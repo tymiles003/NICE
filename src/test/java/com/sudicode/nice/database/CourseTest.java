@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,45 +35,33 @@ public class CourseTest {
     @Before
     public void setUp() throws Exception {
         course = new Course();
-        course.setId(counter.incrementAndGet());
+        course.setCrn(counter.incrementAndGet());
         course.insert();
     }
 
     @Test
     public void testScheduling() throws Exception {
-        LocalTime time = LocalTime.of(0, 0);
+        // Set start/end times
+        LocalTime setTime = LocalTime.of(0, 0);
+        for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+            setTime = setTime.plusHours(1);
+            course.setStart(dayOfWeek, setTime);
 
-        course.setMondayStart(time);
-        course.setTuesdayStart(time.plusHours(1));
-        course.setWednesdayStart(time.plusHours(2));
-        course.setThursdayStart(time.plusHours(3));
-        course.setFridayStart(time.plusHours(4));
-        course.setSaturdayStart(time.plusHours(5));
-        course.setSundayStart(time.plusHours(6));
-        course.setMondayEnd(time.plusHours(7));
-        course.setTuesdayEnd(time.plusHours(8));
-        course.setWednesdayEnd(time.plusHours(9));
-        course.setThursdayEnd(time.plusHours(10));
-        course.setFridayEnd(time.plusHours(11));
-        course.setSaturdayEnd(time.plusHours(12));
-        course.setSundayEnd(time.plusHours(13));
+            setTime = setTime.plusHours(1);
+            course.setEnd(dayOfWeek, setTime);
+        }
         course.saveIt();
         course.refresh();
 
-        assertEquals(time, course.getMondayStart());
-        assertEquals(time.plusHours(1), course.getTuesdayStart());
-        assertEquals(time.plusHours(2), course.getWednesdayStart());
-        assertEquals(time.plusHours(3), course.getThursdayStart());
-        assertEquals(time.plusHours(4), course.getFridayStart());
-        assertEquals(time.plusHours(5), course.getSaturdayStart());
-        assertEquals(time.plusHours(6), course.getSundayStart());
-        assertEquals(time.plusHours(7), course.getMondayEnd());
-        assertEquals(time.plusHours(8), course.getTuesdayEnd());
-        assertEquals(time.plusHours(9), course.getWednesdayEnd());
-        assertEquals(time.plusHours(10), course.getThursdayEnd());
-        assertEquals(time.plusHours(11), course.getFridayEnd());
-        assertEquals(time.plusHours(12), course.getSaturdayEnd());
-        assertEquals(time.plusHours(13), course.getSundayEnd());
+        // Get start/end times
+        LocalTime getTime = LocalTime.of(0, 0);
+        for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+            getTime = getTime.plusHours(1);
+            assertEquals(getTime, course.getStart(dayOfWeek));
+
+            getTime = getTime.plusHours(1);
+            assertEquals(getTime, course.getEnd(dayOfWeek));
+        }
     }
 
 }
