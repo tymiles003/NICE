@@ -6,6 +6,14 @@ CREATE TABLE `Attendances` (
   `crn`          DECIMAL(5, 0) NOT NULL,
   PRIMARY KEY (`attendanceid`)
 );
+DROP TABLE IF EXISTS `Registrations`;
+CREATE TABLE `Registrations` (
+  `registrationid` BIGINT        NOT NULL AUTO_INCREMENT,
+  `datetime`       TIMESTAMP     NULL     DEFAULT CURRENT_TIMESTAMP,
+  `studentid`      INT(11)       NOT NULL,
+  `crn`            DECIMAL(5, 0) NOT NULL,
+  PRIMARY KEY (`registrationid`)
+);
 DROP TABLE IF EXISTS `Courses`;
 CREATE TABLE `Courses` (
   `crn`     DECIMAL(5, 0) NOT NULL,
@@ -27,14 +35,6 @@ CREATE TABLE `Courses` (
   `u_start` TIME          DEFAULT NULL,
   `u_end`   TIME          DEFAULT NULL,
   PRIMARY KEY (`crn`)
-);
-DROP TABLE IF EXISTS `Registrations`;
-CREATE TABLE `Registrations` (
-  `registrationid` BIGINT        NOT NULL AUTO_INCREMENT,
-  `datetime`       TIMESTAMP     NULL     DEFAULT CURRENT_TIMESTAMP,
-  `studentid`      INT(11)       NOT NULL,
-  `crn`            DECIMAL(5, 0) NOT NULL,
-  PRIMARY KEY (`registrationid`)
 );
 DROP TABLE IF EXISTS `Students`;
 CREATE TABLE `Students` (
