@@ -7,6 +7,7 @@ import com.sudicode.nice.database.Course;
 import com.sudicode.nice.database.Student;
 import com.sudicode.nice.hardware.CardReader;
 import com.sudicode.nice.hardware.CardTerminalDevice;
+import com.sudicode.nice.hardware.DisabledCardTerminal;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -71,12 +72,8 @@ public class Controller implements Initializable {
      * Initalize dependencies here, since the {@link Controller} cannot be instantiated by Guice.
      */
     public Controller() {
-        try {
-            cardTerminal = getCardTerminal();
-            cardReader = new CardReader(new CardTerminalDevice(cardTerminal));
-        } catch (CardException | RuntimeException e) {
-            DialogFactory.showThrowableDialog(e);
-        }
+        cardTerminal = getCardTerminal();
+        cardReader = new CardReader(new CardTerminalDevice(cardTerminal));
     }
 
     @Override
@@ -355,15 +352,19 @@ public class Controller implements Initializable {
      * Get card reader.
      *
      * @return The {@link CardTerminal}
-     * @throws CardException if the card operation failed
      */
-    private CardTerminal getCardTerminal() throws CardException {
-        TerminalFactory terminalFactory = TerminalFactory.getDefault();
-        List<CardTerminal> terminals = terminalFactory.terminals().list();
-        log.info("Available terminals: {}", terminals);
-        CardTerminal cardTerminal = terminals.get(0);
-        log.info("Commands will be sent to {}", cardTerminal.getName());
-        return cardTerminal;
+    private CardTerminal getCardTerminal() {
+        try {
+            TerminalFactory terminalFactory = TerminalFactory.getDefault();
+            List<CardTerminal> terminals = terminalFactory.terminals().list();
+            log.info("Available terminals: {}", terminals);
+            CardTerminal cardTerminal = terminals.get(0);
+            log.info("Commands will be sent to {}", cardTerminal.getName());
+            return cardTerminal;
+        } catch (CardException | RuntimeException e) {
+            log.error("Could not get card reader", e);
+            return new DisabledCardTerminal();
+        }
     }
 
     // TODO: Implement.
