@@ -6,7 +6,9 @@ import com.sudicode.nice.TestUtil;
 import com.sudicode.nice.database.Course;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.testfx.framework.junit.ApplicationTest;
@@ -21,6 +23,7 @@ import static javafx.scene.input.KeyCode.ENTER;
 import static javafx.scene.input.KeyCode.SPACE;
 import static javafx.scene.input.KeyCode.TAB;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Unit tests for {@link DialogFactory}.
@@ -40,6 +43,11 @@ public class DialogFactoryTest extends ApplicationTest {
         TestUtil.closeDbConnection();
     }
 
+    @Before
+    public void setUp() {
+        assumeFalse(SystemUtils.IS_OS_LINUX);
+    }
+
     @Override
     public void start(Stage stage) {
         // Not necessary to show the stage, since we're only working with dialogs
@@ -47,18 +55,16 @@ public class DialogFactoryTest extends ApplicationTest {
 
     @Test
     public void testInsertCourse() throws Exception {
-        // Use countdown latch to prevent race conditions
-        CountDownLatch latch = new CountDownLatch(1);
-
         // Show dialog
         Course course = new Course();
+        CountDownLatch untilCourseInserted = new CountDownLatch(1);
         Platform.runLater(() -> DialogFactory.showCourseDialog(course).ifPresent(Errors.rethrow().wrap(crs -> {
             try {
                 TestUtil.openDbConnection();
                 crs.insert();
             } finally {
                 TestUtil.closeDbConnection();
-                latch.countDown();
+                untilCourseInserted.countDown();
             }
         })));
         sleep(3, SECONDS); // wait a few seconds for dialog to appear
@@ -75,7 +81,7 @@ public class DialogFactoryTest extends ApplicationTest {
         push(ENTER);
 
         // Test course against database
-        latch.await();
+        untilCourseInserted.await();
         course.refresh();
         assertEquals("Sample Course", course.getName());
         assertEquals("CRS-123", course.getNumber());
