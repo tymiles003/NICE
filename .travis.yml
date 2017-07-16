@@ -1,6 +1,0 @@
-language: java
-osx_image: xcode8.3
-os:
-  - osx
-before_script:
-  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ( sudo Xvfb :99 -ac -screen 0 1024x768x8; echo ok )& fi
