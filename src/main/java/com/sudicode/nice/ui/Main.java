@@ -1,7 +1,7 @@
 package com.sudicode.nice.ui;
 
 import com.diffplug.common.base.DurianPlugins;
-import com.diffplug.common.base.Errors;
+import com.diffplug.common.base.Errors.Plugins.Dialog;
 import com.sudicode.nice.Constants;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -18,7 +18,7 @@ public class Main extends Application {
 
     public static void main(String[] args) {
         // Set default exception handling routine
-        DurianPlugins.register(Errors.Plugins.Dialog.class, e -> Platform.runLater(() -> DialogFactory.showThrowableDialog(e)));
+        DurianPlugins.register(Dialog.class, e -> Platform.runLater(() -> DialogFactory.showThrowableDialog(e)));
 
         // Run the application
         launch(args);
