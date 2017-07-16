@@ -6,9 +6,7 @@ import com.sudicode.nice.TestUtil;
 import com.sudicode.nice.database.Course;
 import javafx.application.Platform;
 import javafx.stage.Stage;
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.testfx.framework.junit.ApplicationTest;
@@ -19,11 +17,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static javafx.scene.input.KeyCode.ENTER;
-import static javafx.scene.input.KeyCode.SPACE;
-import static javafx.scene.input.KeyCode.TAB;
+import static javafx.scene.input.KeyCode.*;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
 
 /**
  * Unit tests for {@link DialogFactory}.
@@ -41,11 +36,6 @@ public class DialogFactoryTest extends ApplicationTest {
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         TestUtil.closeDbConnection();
-    }
-
-    @Before
-    public void setUp() {
-        assumeFalse(SystemUtils.IS_OS_LINUX);
     }
 
     @Override
