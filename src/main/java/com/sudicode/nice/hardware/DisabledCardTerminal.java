@@ -11,29 +11,31 @@ import javax.smartcardio.CardTerminal;
  */
 public class DisabledCardTerminal extends CardTerminal {
 
+    private static String MESSAGE = "No card reader found, card reading has been disabled!";
+
     @Override
     public String getName() {
-        return null;
+        throw new UnsupportedOperationException(MESSAGE);
     }
 
     @Override
     public Card connect(String s) throws CardException {
-        return null;
+        throw new UnsupportedOperationException(MESSAGE);
     }
 
     @Override
     public boolean isCardPresent() throws CardException {
-        return false;
+        throw new UnsupportedOperationException(MESSAGE);
     }
 
     @Override
     public boolean waitForCardPresent(long l) throws CardException {
-        return false;
+        throw new UnsupportedOperationException(MESSAGE);
     }
 
     @Override
     public boolean waitForCardAbsent(long l) throws CardException {
-        return false;
+        throw new UnsupportedOperationException(MESSAGE);
     }
 
 }
