@@ -6,10 +6,12 @@ import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.IdName;
 import org.javalite.activejdbc.annotations.Table;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -72,19 +74,21 @@ public class Student extends Model {
      * Get status (present, late, absent) in a certain {@link Course}.
      *
      * @param course The {@link Course}
+     * @param date   The {@link LocalDate}
      * @return "present", "late", or "absent"
      * @throws SQLException if a database access error occurs
      */
-    public String getStatus(Course course) throws SQLException {
+    public String getStatus(Course course, LocalDate date) throws SQLException {
         // Query the database.
         String sql = "SELECT datetime "
                 + "FROM Attendances "
-                + "WHERE studentid = ? AND crn = ? AND CAST(datetime AS DATE) = CURRENT_DATE() "
+                + "WHERE studentid = ? AND crn = ? AND CAST(datetime AS DATE) = ? "
                 + "ORDER BY datetime";
         Timestamp timestamp = null;
         try (PreparedStatement ps = Base.connection().prepareStatement(sql)) {
             ps.setInt(1, getStudentId());
             ps.setInt(2, course.getCrn());
+            ps.setDate(3, Date.valueOf(date));
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 timestamp = rs.getTimestamp("datetime");

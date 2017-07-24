@@ -2,10 +2,13 @@ package com.sudicode.nice.database;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.EqualsAndHashCode;
+import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.IdName;
 import org.javalite.activejdbc.annotations.Table;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -150,6 +153,23 @@ public class Course extends Model {
     @Override
     public String toString() {
         return String.format("%s (%s-%02d)", getName(), getNumber(), getSection());
+    }
+
+    /**
+     * Drop a {@link Student} from this course.
+     *
+     * @param student {@link Student} to drop
+     * @throws SQLException if a database access error occurs
+     */
+    public void drop(Student student) throws SQLException {
+        String sql = "DELETE FROM Registrations WHERE studentid = ? AND crn = ?";
+        try (PreparedStatement ps = Base.connection().prepareStatement(sql)) {
+            ps.setInt(1, student.getStudentId());
+            ps.setInt(2, getCrn());
+            if (ps.executeUpdate() != 1) {
+                throw new SQLException("Drop failed.");
+            }
+        }
     }
 
 }

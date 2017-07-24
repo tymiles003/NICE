@@ -15,6 +15,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import javax.smartcardio.CardException;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -105,6 +107,17 @@ public class DialogFactory {
         alert.setTitle("No Course Selected");
         alert.setHeaderText("Select a course.");
         alert.setContentText("You must select a course to perform this action.");
+        alert.showAndWait();
+    }
+
+    /**
+     * Show a {@link Dialog} informing the instructor to select a {@link Student}.
+     */
+    public static void showNoStudentSelectedDialog() {
+        Alert alert = newAlert(AlertType.INFORMATION);
+        alert.setTitle("No Student Selected");
+        alert.setHeaderText("Select a student.");
+        alert.setContentText("You must select a student to perform this action.");
         alert.showAndWait();
     }
 
@@ -407,6 +420,61 @@ public class DialogFactory {
         alert.getDialogPane().setExpandableContent(expContent);
 
         alert.showAndWait();
+    }
+
+    /**
+     * Show a dialog box which indicates to the instructor that a {@link Student} has already been registered.
+     *
+     * @param student The registered {@link Student}
+     */
+    public static void showAlreadyRegisteredDialog(Student student) {
+        Alert alert = newAlert(AlertType.ERROR);
+        alert.setTitle("Student Already Registered");
+        alert.setHeaderText(student + " is already registered.");
+        alert.setContentText("Use 'Edit' to update this student or 'Delete' to remove them from the database.");
+        alert.showAndWait();
+    }
+
+    /**
+     * Show a dialog box that allows the instructor to pick a date.
+     *
+     * @return The {@link LocalDate}, if present
+     */
+    public static Optional<LocalDate> showDateDialog() {
+        // Create the custom dialog.
+        Dialog<LocalDate> dialog = newDialog();
+        dialog.setTitle("Since Date");
+        dialog.setHeaderText("Since when?");
+
+        // Set the button types.
+        ButtonType okButtonType = ButtonType.OK;
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+        // Create the labels and fields.
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        DatePicker datePicker = new DatePicker();
+
+        grid.add(new Label("Date:"), 0, 0);
+        grid.add(datePicker, 1, 0);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Request focus on the date field by default.
+        Platform.runLater(datePicker::requestFocus);
+
+        // Convert the result to a date when the OK button is clicked.
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) {
+                return datePicker.getValue();
+            }
+            return null;
+        });
+
+        return dialog.showAndWait();
     }
 
     /**

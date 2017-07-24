@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -48,7 +49,7 @@ public class StudentTest {
         TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(23, 59));
         student.enroll(course);
         student.attend(course);
-        assertEquals("present", student.getStatus(course));
+        assertEquals("present", student.getStatus(course, LocalDate.now()));
     }
 
     @Test
@@ -56,20 +57,20 @@ public class StudentTest {
         TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(0, 0));
         student.enroll(course);
         student.attend(course);
-        assertEquals("late", student.getStatus(course));
+        assertEquals("late", student.getStatus(course, LocalDate.now()));
     }
 
     @Test
     public void testNoClass() throws Exception {
         student.enroll(course);
-        assertEquals("no class", student.getStatus(course));
+        assertEquals("no class", student.getStatus(course, LocalDate.now()));
     }
 
     @Test
     public void testAbsent() throws Exception {
         TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(0, 0));
         student.enroll(course);
-        assertEquals("absent", student.getStatus(course));
+        assertEquals("absent", student.getStatus(course, LocalDate.now()));
     }
 
 }

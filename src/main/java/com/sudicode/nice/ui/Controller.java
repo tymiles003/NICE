@@ -23,14 +23,21 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.TerminalFactory;
+import java.awt.Desktop;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -205,7 +212,7 @@ public class Controller implements Initializable {
 
         statusCol.setCellValueFactory(param -> {
             try {
-                return new SimpleStringProperty(param.getValue().getStatus(selected));
+                return new SimpleStringProperty(param.getValue().getStatus(selected, LocalDate.now()));
             } catch (SQLException e) {
                 DialogFactory.showThrowableDialog(e);
                 return new SimpleStringProperty();
@@ -367,19 +374,86 @@ public class Controller implements Initializable {
         }
     }
 
-    // TODO: Implement.
+    /**
+     * Export CSV-formatted attendance report.
+     */
     public void exportAttendanceReport() {
-        DialogFactory.showThrowableDialog(new UnsupportedOperationException("Not yet implemented!"));
+        // Get selected course
+        Course course = getSelectedCourse();
+        if (course == null) {
+            DialogFactory.showNoCourseSelectedDialog();
+            return;
+        }
+
+        DialogFactory.showDateDialog().ifPresent(Errors.dialog().wrap(from -> {
+            // Build date array
+            List<LocalDate> dates = new ArrayList<>();
+            for (LocalDate date = from; !date.isAfter(LocalDate.now()); date = date.plusDays(1)) {
+                if (course.getStart(date.getDayOfWeek()) != null && course.getEnd(date.getDayOfWeek()) != null) {
+                    dates.add(date);
+                }
+            }
+
+            // Build CSV string
+            StringBuilder csv = new StringBuilder();
+            csv.append(',').append(StringUtils.join(dates, ',')).append(System.lineSeparator());
+            for (Student student : studentsTable.getItems()) {
+                csv.append(student).append(',');
+                for (LocalDate date : dates) {
+                    csv.append(student.getStatus(course, date)).append(',');
+                }
+                csv.append(System.lineSeparator());
+            }
+
+            // Export CSV file
+            Path csvFile = Files.createTempFile(null, ".csv");
+            Files.write(csvFile, csv.toString().getBytes(StandardCharsets.UTF_8));
+
+            // Open in default application (e.g. Microsoft Excel)
+            Desktop.getDesktop().open(csvFile.toFile());
+        }));
     }
 
-    // TODO: Implement.
+    /**
+     * Register a student.
+     */
     public void registerStudent() {
-        DialogFactory.showThrowableDialog(new UnsupportedOperationException("Not yet implemented!"));
+        courseSelect.getSelectionModel().clearSelection();
+        DialogFactory.showAsyncWaitForCardDialog(cardReader, integer -> {
+            Student student = Student.findById(integer);
+            if (student != null) {
+                DialogFactory.showAlreadyRegisteredDialog(student);
+            } else {
+                addStudent(integer);
+            }
+        });
     }
 
-    // TODO: Implement.
+    /**
+     * Drop selected student from selected course.
+     */
     public void dropStudent() {
-        DialogFactory.showThrowableDialog(new UnsupportedOperationException("Not yet implemented!"));
+        // Get selected course
+        Course course = getSelectedCourse();
+        if (course == null) {
+            DialogFactory.showNoCourseSelectedDialog();
+            return;
+        }
+
+        // Get selected student
+        Student student = getSelectedStudent();
+        if (student == null) {
+            DialogFactory.showNoStudentSelectedDialog();
+            return;
+        }
+
+        // Drop student
+        try {
+            course.drop(student);
+            studentsTable.getItems().remove(getSelectedStudentIndex());
+        } catch (SQLException e) {
+            DialogFactory.showThrowableDialog(e);
+        }
     }
 
 }
