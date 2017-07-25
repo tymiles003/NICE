@@ -11,6 +11,7 @@ import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for {@link Student}.
@@ -49,7 +50,7 @@ public class StudentTest {
         TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(23, 59));
         student.enroll(course);
         student.attend(course);
-        assertEquals("present", student.getStatus(course, LocalDate.now()));
+        assertTrue(student.getStatus(course, LocalDate.now()).startsWith("present"));
     }
 
     @Test
@@ -57,7 +58,7 @@ public class StudentTest {
         TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(0, 0));
         student.enroll(course);
         student.attend(course);
-        assertEquals("late", student.getStatus(course, LocalDate.now()));
+        assertTrue(student.getStatus(course, LocalDate.now()).startsWith("late"));
     }
 
     @Test

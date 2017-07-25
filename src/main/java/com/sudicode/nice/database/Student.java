@@ -14,6 +14,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -106,9 +107,9 @@ public class Student extends Model {
         } else {
             LocalTime attendTime = timestamp.toLocalDateTime().toLocalTime();
             if (attendTime.isAfter(courseEnd)) {
-                return "late";
+                return "late (" + attendTime.format(DateTimeFormatter.ofPattern("h:mm a")) + ")";
             } else {
-                return "present";
+                return "present (" + attendTime.format(DateTimeFormatter.ofPattern("h:mm a")) + ")";
             }
         }
     }
