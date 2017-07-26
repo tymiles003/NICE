@@ -12,7 +12,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -97,9 +96,8 @@ public class Student extends Model {
         }
 
         // Return status.
-        LocalDateTime now = LocalDateTime.now();
-        LocalTime courseStart = course.getStart(now.getDayOfWeek());
-        LocalTime courseEnd = course.getEnd(now.getDayOfWeek());
+        LocalTime courseStart = course.getStart(date.getDayOfWeek());
+        LocalTime courseEnd = course.getEnd(date.getDayOfWeek());
         if (courseStart == null || courseEnd == null) {
             return "no class";
         } else if (timestamp == null) {
@@ -107,6 +105,8 @@ public class Student extends Model {
         } else {
             LocalTime attendTime = timestamp.toLocalDateTime().toLocalTime();
             if (attendTime.isAfter(courseEnd)) {
+                return "absent";
+            } else if (attendTime.isAfter(courseStart)) {
                 return "late (" + attendTime.format(DateTimeFormatter.ofPattern("h:mm a")) + ")";
             } else {
                 return "present (" + attendTime.format(DateTimeFormatter.ofPattern("h:mm a")) + ")";

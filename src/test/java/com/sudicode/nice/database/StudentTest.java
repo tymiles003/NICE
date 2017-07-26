@@ -47,7 +47,7 @@ public class StudentTest {
 
     @Test
     public void testPresent() throws Exception {
-        TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(23, 59));
+        TestUtil.setScheduleForEachDay(course, LocalTime.now().plusMinutes(5), LocalTime.now().plusMinutes(30));
         student.enroll(course);
         student.attend(course);
         assertTrue(student.getStatus(course, LocalDate.now()).startsWith("present"));
@@ -55,7 +55,7 @@ public class StudentTest {
 
     @Test
     public void testLate() throws Exception {
-        TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(0, 0));
+        TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.now().plusMinutes(5));
         student.enroll(course);
         student.attend(course);
         assertTrue(student.getStatus(course, LocalDate.now()).startsWith("late"));
@@ -71,6 +71,7 @@ public class StudentTest {
     public void testAbsent() throws Exception {
         TestUtil.setScheduleForEachDay(course, LocalTime.of(0, 0), LocalTime.of(0, 0));
         student.enroll(course);
+        student.attend(course);
         assertEquals("absent", student.getStatus(course, LocalDate.now()));
     }
 

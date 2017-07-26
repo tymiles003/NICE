@@ -295,6 +295,7 @@ public class Controller implements Initializable {
                 c.saveIt();
                 courseSelect.getItems().set(index, c);
                 DialogFactory.showObjectUpdatedDialog(c);
+                studentsTable.refresh();
             }));
         }
     }
