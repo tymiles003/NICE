@@ -9,7 +9,7 @@ Requirements:
 - [ACR122U USB NFC Reader](https://www.acs.com.hk/en/products/3/acr122u-usb-nfc-reader)
 
 Steps:
-1. Connect your ACR122U NFC Reader. The device should be showing a red light. If not, ensure that you have the correct drivers installed. On Windows, you may need to start the “Smart Card” service as well.
+1. Connect your ACR122U USB NFC Reader. The device should be showing a red light. If not, ensure that you have the correct drivers installed. On Windows, you may need to start the “Smart Card” service as well.
 2. In MySQL, create a database named `nicedb`. Initialize it using [DDL.sql](https://github.com/sudiamanj/NICE/blob/master/src/main/resources/com/sudicode/nice/DDL.sql).
 3. Set the following environment variables:
 
