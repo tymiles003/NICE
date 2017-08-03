@@ -1,4 +1,4 @@
-# NICE
+# NICE Attendance Taker
 NICE (NFC-Integrated Cards for Entry) attendance management system.
 
 ## Quick Start
