@@ -24,4 +24,4 @@ mvn install && mvn exec:java
 ```
 
 ## See it in action!
-<a href="https://vimeo.com/228209879"><img src="https://raw.githubusercontent.com/sudiamanj/NICE/master/images/demo.png" alt="Video Demo" width="800" height="480"></a>
+<a href="https://vimeo.com/228209879"><img src="https://raw.githubusercontent.com/sudiamanj/NICE/master/images/demo.png" alt="Video Demo"></a>
