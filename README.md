@@ -1,5 +1,5 @@
 # NICE Attendance Taker
-![Logo](https://sudicode.com/images/portfolio/NICE-icon.png)
+![Logo](https://raw.githubusercontent.com/sudiamanj/NICE/master/images/NICE-icon.png)
 
 NICE (NFC-Integrated Cards for Entry) attendance management system.
 
